@@ -1,0 +1,38 @@
+.spx {
+    border-collapse: collapse;
+}
+
+.spx:focus {
+    outline: none;
+}
+
+.spx__body {}
+
+.spx tbody {}
+
+.spx thead {}
+
+.spx td {
+    border: 0.01px solid;
+}
+
+.spx__cell {
+    text-align: right;
+}
+
+.spx__cell-editor {}
+
+.spx__cell-editor input {
+    padding: 0;
+    height: auto;
+    width: 100%;
+    text-align: right;
+}
+
+.spx__cell-editor input:focus {}
+
+.spx__head-cell {
+    width: 200px;
+    border: solid 1px gray;
+    background-color: lightgray;
+}
