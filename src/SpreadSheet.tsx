@@ -5,6 +5,7 @@ import React, {
   MouseEvent,
   useCallback,
   ChangeEventHandler,
+  useEffect,
 } from 'react'
 import ReactDOM from 'react-dom'
 import internal from 'stream'
@@ -12,6 +13,7 @@ import { setConstantValue, textChangeRangeIsUnchanged } from 'typescript'
 import './spreadsheet.css'
 import { Location, Selection, DataSet, CellData } from './model'
 import { iota } from './util'
+import { tab } from '@testing-library/user-event/dist/tab'
 
 //=================================================
 // Cell
@@ -52,8 +54,10 @@ export const Cell: React.FC<CellProps> = ({
     setCurVal(value.value)
   })
   const style: any = {}
+  var isSelect = false
   if (Location.equals(selected, location)) {
     style.backgroundColor = '#0f8'
+    isSelect = true
   } else if (selection.contains(location)) {
     style.backgroundColor = 'cyan'
   }
@@ -267,7 +271,7 @@ type SpreadSheetProps = {
 }
 
 export const SpreadSheet: React.FC = () => {
-  const data = new DataSet(8, 8)
+  const data = new DataSet(30, 8)
   const head = [...Array(data.colNum)].map((_, i) =>
     String.fromCharCode('A'.charCodeAt(0) + i),
   )
@@ -278,7 +282,12 @@ export const SpreadSheet: React.FC = () => {
   let [editing, setEditing] = useState<Location | undefined>()
   let [selection, setSelection] = useState<Selection>(new Selection(0, 0, 0, 0))
 
-  function onKeyDown(key: string, shift: boolean, ctrl: boolean) {
+  function onKeyDown(
+    e: React.KeyboardEvent,
+    key: string,
+    shift: boolean,
+    ctrl: boolean,
+  ) {
     if (editing) return
     if (!selected) return
     console.log(key)
@@ -295,8 +304,12 @@ export const SpreadSheet: React.FC = () => {
       setSelection(newSelection)
       setSelected(newLoc)
       setSelectStart(newStart)
-    }
-    if (key >= '0' && key <= '9') {
+      e.preventDefault()
+    } else if (
+      key.length == 1 &&
+      key.charCodeAt(0) > 0x20 &&
+      key.charCodeAt(0) <= 0x7e
+    ) {
       setEditing(selected)
     }
   }
@@ -325,29 +338,31 @@ export const SpreadSheet: React.FC = () => {
   const tableElement = useRef<HTMLTableElement>(null)
 
   return (
-    <table
-      className="spx"
-      ref={tableElement}
-      tabIndex={0}
-      onKeyDown={(e) => onKeyDown(e.key, e.shiftKey, e.ctrlKey)}
-    >
-      <HeadRow value={head} />
-      <tbody className="spx__body">
-        {iota(data.rowNum, (row) => (
-          <Row
-            key={`${row}`}
-            {...{
-              row,
-              data,
-              events,
-              editorEvents,
-              selected,
-              editing,
-              selection,
-            }}
-          />
-        ))}
-      </tbody>
-    </table>
+    <div className="spx-outer">
+      <table
+        className="spx"
+        ref={tableElement}
+        tabIndex={0}
+        onKeyDown={(e) => onKeyDown(e, e.key, e.shiftKey, e.ctrlKey)}
+      >
+        <HeadRow value={head} />
+        <tbody className="spx__body">
+          {iota(data.rowNum, (row) => (
+            <Row
+              key={`${row}`}
+              {...{
+                row,
+                data,
+                events,
+                editorEvents,
+                selected,
+                editing,
+                selection,
+              }}
+            />
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

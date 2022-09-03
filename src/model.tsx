@@ -121,7 +121,7 @@ export class DataSet {
   constructor(rowNum: number, colNum: number) {
     this.rowNum = rowNum
     this.colNum = colNum
-    this.data = iota(colNum, (i) => iota(rowNum, (j) => new CellData('' + j)))
+    this.data = iota(rowNum, (i) => iota(colNum, (j) => new CellData('' + j)))
   }
 
   get(row: number, col: number) {

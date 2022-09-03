@@ -1,5 +1,11 @@
+.spx-outer {
+    overflow: auto;
+    height: 400px;
+}
+
 .spx {
     border-collapse: collapse;
+    width: 800px;
 }
 
 .spx:focus {
@@ -11,6 +17,12 @@
 .spx tbody {}
 
 .spx thead {}
+
+.spx th {
+    position: sticky;
+    top: 0;
+    left: 0;
+}
 
 .spx td {
     border: 0.01px solid;
