@@ -5,10 +5,23 @@ import { iota } from './util'
 //=================================================
 
 export class Location {
+  static cache = new Map<number, Location>()
+
   row: number
   col: number
 
-  constructor(row: number, col: number) {
+  static from(row: number, col: number): Location {
+    const key = row * 1000 + col
+    if (Location.cache.has(key)) {
+      return Location.cache.get(key)!
+    } else {
+      const l = new Location(row, col)
+      Location.cache.set(key, l)
+      return l
+    }
+  }
+
+  private constructor(row: number, col: number) {
     this.row = row
     this.col = col
   }

@@ -16,11 +16,6 @@ import { IDataSetView, ICellView, DataSetView } from './view'
 // Cell
 //=================================================
 
-type CellEvents = {
-  onClick: (location: Location) => void
-  onDoubleClick: (location: Location) => void
-}
-
 type CellProps = {
   selected?: Location
   editing?: Location
@@ -88,11 +83,6 @@ export const HeadCell: React.FC<HeadCellProps> = (props) => {
 // CellEditor
 //=================================================
 
-type CellEditorEvents = {
-  onKeyDown?: (key: string, shift: boolean, ctrl: boolean) => void
-  onChange?: (loc: Location, newValue: string) => void
-}
-
 type CellEditorProps = {
   cell: ICellView
   dispatch: React.Dispatch<any>
@@ -148,6 +138,7 @@ class Selector {
     this.rows = rows
     this.cols = cols
   }
+
   move(loc: Location, x: number, y: number) {
     const newLoc = { row: loc.row + y, col: loc.col + x }
     if (
@@ -156,41 +147,9 @@ class Selector {
       newLoc.col >= this.cols ||
       newLoc.row >= this.rows
     ) {
-      return loc
+      return undefined
     } else {
       return newLoc
-    }
-  }
-
-  onKeyDown(
-    s: Selection,
-    loc: Location,
-    start: Location,
-    key: string,
-    shift: boolean,
-    ctrl: boolean,
-  ): [Selection, Location, Location] | undefined {
-    let newLoc: Location
-    switch (key) {
-      case 'ArrowUp':
-        newLoc = this.move(loc, 0, -1)
-        break
-      case 'ArrowDown':
-        newLoc = this.move(loc, 0, 1)
-        break
-      case 'ArrowLeft':
-        newLoc = this.move(loc, -1, 0)
-        break
-      case 'ArrowRight':
-        newLoc = this.move(loc, 1, 0)
-        break
-      default:
-        return undefined
-    }
-    if (shift) {
-      return [new Selection(newLoc, start), newLoc, start]
-    } else {
-      return [new Selection(newLoc), newLoc, newLoc]
     }
   }
 }
@@ -252,7 +211,7 @@ function reduceSpreadSheet(
       return { ...state, editing: undefined, selected: newLoc, selectStart }
     }
     case 'cursor.move': {
-      const newLoc = new Location(
+      const newLoc = Location.from(
         state.selected!.row + action.dy,
         state.selected!.col + action.dx,
       )
@@ -281,48 +240,46 @@ function reduceSpreadSheet(
   return state
 }
 
-export const SpreadSheet: React.FC = () => {
-  const data = useMemo(() => new DataSetView(new DataSet(30, 8)), [])
+function keyToCursor(key: string) {
+  switch (key) {
+    case 'ArrowUp':
+      return [0, -1]
+    case 'ArrowDown':
+      return [0, 1]
+    case 'ArrowLeft':
+      return [-1, 0]
+    case 'ArrowRight':
+      return [1, 0]
+    default:
+      return undefined
+  }
+}
 
-  const head = [...Array(data.colNum)].map((_, i) =>
-    String.fromCharCode('A'.charCodeAt(0) + i),
+function isNormalKey(key: string) {
+  return (
+    key.length == 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
   )
+}
+
+export const SpreadSheet: React.FC = () => {
   const ref = useRef<HTMLTableElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
-    data: data,
+    data: new DataSetView(new DataSet(30, 8)),
     selection: new Selection(0, 0, 0, 0),
     shift: false,
     tableRef: ref,
   })
-
-  function keyToCursor(key: string) {
-    switch (key) {
-      case 'ArrowUp':
-        return [0, -1]
-      case 'ArrowDown':
-        return [0, 1]
-      case 'ArrowLeft':
-        return [-1, 0]
-      case 'ArrowRight':
-        return [1, 0]
-      default:
-        return undefined
-    }
-  }
+  const head = [...Array(state.data.colNum)].map((_, i) =>
+    String.fromCharCode('A'.charCodeAt(0) + i),
+  )
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (state.editing) return
       if (!state.selected) return
-      console.log(e.key)
       if (e.key == 'Shift') {
         dispatch({ type: 'cursor.start_shift' })
-      } else if (
-        !e.ctrlKey &&
-        e.key.length == 1 &&
-        e.key.charCodeAt(0) > 0x20 &&
-        e.key.charCodeAt(0) <= 0x7e
-      ) {
+      } else if (!e.ctrlKey && isNormalKey(e.key)) {
         dispatch({ type: 'cursor.start_edit' })
       } else {
         let d = keyToCursor(e.key)
@@ -332,7 +289,7 @@ export const SpreadSheet: React.FC = () => {
         }
       }
     },
-    [state],
+    [state, dispatch],
   )
 
   const onKeyUp = useCallback(
@@ -363,11 +320,11 @@ export const SpreadSheet: React.FC = () => {
         <tbody className="spx__body">
           {iota(state.data.rowNum, (row) => (
             <tr className="spx__row" key={row}>
-              {iota(data.colNum, (col) => (
+              {iota(state.data.colNum, (col) => (
                 <Cell
                   key={`${row}-${col}`}
-                  cell={data.get(row, col)}
-                  location={{ row, col }}
+                  cell={state.data.get(row, col)}
+                  location={Location.from(row, col)}
                   selected={state.selected}
                   editing={state.editing}
                   selection={state.selection}
