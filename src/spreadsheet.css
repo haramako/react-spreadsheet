@@ -4,6 +4,7 @@
 }
 
 .spx {
+    user-select: none;
     border-collapse: collapse;
     width: 800px;
 }
