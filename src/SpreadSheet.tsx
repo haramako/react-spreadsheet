@@ -14,6 +14,7 @@ import './spreadsheet.css'
 import { Location, Selection, DataSet, CellData } from './model'
 import { iota } from './util'
 import { tab } from '@testing-library/user-event/dist/tab'
+import { IDataSetView, ICellView, DataSetView } from './view'
 
 //=================================================
 // Cell
@@ -29,30 +30,32 @@ type CellProps = {
   editing?: Location
   selection: Selection
   location: Location
-  value: CellData
+  cell: ICellView
   events: CellEvents
   editorEvents: CellEditorEvents
 }
 
 export const Cell: React.FC<CellProps> = ({
   location,
-  value,
+  cell,
   events,
   editorEvents,
   selected,
   editing,
   selection,
 }) => {
-  const [curVal, setCurVal] = useState(value.value)
+  const [curVal, setCurVal] = useState(cell.value)
   const onClick = useCallback(() => {
     events.onClick(location)
   }, [events, location])
   const onDoubleClick = useCallback(() => {
     events.onDoubleClick(location)
   }, [events, location])
-  value.onChange(() => {
-    setCurVal(value.value)
-  })
+  /*
+    cell.onChange(() => {
+        setCurVal(cell.value)
+    })
+    */
   const style: any = {}
   var isSelect = false
   if (Location.equals(selected, location)) {
@@ -64,7 +67,7 @@ export const Cell: React.FC<CellProps> = ({
   if (Location.equals(editing, location)) {
     return (
       <td className="spx__cell">
-        <CellEditor value={value} {...{ location, editorEvents }} />
+        <CellEditor cell={cell} {...{ location, editorEvents }} />
       </td>
     )
   } else {
@@ -84,7 +87,7 @@ type RowProps = {
   selected?: Location
   editing?: Location
   selection: Selection
-  data: DataSet
+  data: IDataSetView
   row: number
   events: CellEvents
   editorEvents: CellEditorEvents
@@ -104,7 +107,7 @@ export const Row: React.FC<RowProps> = ({
       {iota(data.colNum, (col) => (
         <Cell
           key={`${row}-${col}`}
-          value={data.get(row, col)}
+          cell={data.get(row, col)}
           location={{ row, col }}
           {...{ events, editorEvents, selected, editing, selection }}
         />
@@ -155,17 +158,17 @@ type CellEditorEvents = {
 }
 
 type CellEditorProps = {
-  value: CellData
+  cell: ICellView
   location: Location
   editorEvents: CellEditorEvents
 }
 
 export const CellEditor: React.FC<CellEditorProps> = ({
-  value,
+  cell,
   location,
   editorEvents,
 }) => {
-  const [val, setVal] = useState(value.value)
+  const [val, setVal] = useState(cell.value)
   const onChange = useCallback(
     (newValue: string) => {
       setVal(newValue)
@@ -271,10 +274,11 @@ type SpreadSheetProps = {
 }
 
 export const SpreadSheet: React.FC = () => {
-  const data = new DataSet(30, 8)
-  const head = [...Array(data.colNum)].map((_, i) =>
+  const _data = new DataSet(30, 8)
+  const head = [...Array(_data.colNum)].map((_, i) =>
     String.fromCharCode('A'.charCodeAt(0) + i),
   )
+  const data = new DataSetView(_data)
 
   const selector = new Selector(data.rowNum, data.colNum)
   let [selected, setSelected] = useState<Location | undefined>()
