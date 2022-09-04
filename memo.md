@@ -1,7 +1,9 @@
 * 選択したセルにスクロールするようにする
 * コマンド/Undo/Redo化をする(reducer?)
-* DataSetをModelとViewModelに分ける
+- DataSetをModelとViewModelに分ける
 * DataSetに型を持たせる
+* コピー&ペースト
+* 表示してるセルだけrenderする
 
 * DataSetの型
   * JSON準拠 => number(int, float), string, bool, null

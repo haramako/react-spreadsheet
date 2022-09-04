@@ -96,13 +96,18 @@ export class Selection {
   }
 }
 
+//=================================================
+// Table models
+//=================================================
+
 export interface IHeaderView {
   name: string
+  validatorType: string
 }
 
 export interface ICell {
   value: string
-  //get valueString(): string
+  error: [string, string] | undefined
   get version(): number
 }
 

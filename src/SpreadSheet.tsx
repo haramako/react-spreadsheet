@@ -9,8 +9,13 @@ import React, {
 import ReactDOM from 'react-dom'
 import './spreadsheet.css'
 import { Location, Selection, ITable, ICell, IHeaderView } from './model'
-import { DataSet } from './table'
+import { Table, ValueValidatorCollection } from './table'
 import { iota } from './util'
+import {
+  IntegerValidator,
+  NumberValidator,
+  StringValidator,
+} from './validators'
 
 //=================================================
 // Cell
@@ -21,11 +26,12 @@ type CellProps = {
   cell: ICell
   selected: boolean
   editing: boolean
+  version: number
   dispatch: React.Dispatch<any>
 }
 
 export const Cell: React.FC<CellProps> = React.memo(
-  ({ location, cell, selected, editing, dispatch }) => {
+  ({ location, cell, selected, editing, version, dispatch }) => {
     const onClick = useCallback(
       (e: React.MouseEvent) => {
         dispatch({ type: 'cursor.set', location })
@@ -43,16 +49,27 @@ export const Cell: React.FC<CellProps> = React.memo(
     if (selected) {
       style.backgroundColor = 'cyan'
     }
+
+    let value = cell.value
+    let err = cell.error
+    let errMessage: string | undefined
+    if (err) {
+      value = err[0]
+      errMessage = '(' + err[1] + ')'
+      style.backgroundColor = '#f88'
+    }
+
     if (editing) {
       return (
         <td className="spx__cell">
-          <CellEditor cell={cell} {...{ dispatch, location }} />
+          <CellEditor cell={cell} {...{ value, dispatch, location }} />
         </td>
       )
     } else {
       return (
         <td className="spx__cell" style={style} {...{ onClick, onDoubleClick }}>
-          {cell.value}
+          {value}
+          {errMessage}
         </td>
       )
     }
@@ -91,16 +108,18 @@ export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
 
 type CellEditorProps = {
   cell: ICell
+  value: string
   dispatch: React.Dispatch<any>
   location: Location
 }
 
 export const CellEditor: React.FC<CellEditorProps> = ({
   cell,
+  value,
   dispatch,
   location,
 }) => {
-  const [val, setVal] = useState(cell.value)
+  const [val, setVal] = useState(value)
   const onChange = useCallback(
     (newValue: string) => {
       setVal(newValue)
@@ -228,9 +247,28 @@ function reduceSpreadSheet(
       {
         let { data, editing } = state
         if (editing != null) {
-          state.tableRef.current!.focus()
-          data.get(editing.row, editing.col).value = action.newValue
-          return { ...state, editing: undefined }
+          // Validate new value.
+          const header = data.getHeader(editing.col)
+          const validator = validators.findValidator(header.validatorType)
+          let err: string | undefined
+          let newValue: any
+          if (validator) {
+            ;[err, newValue] = validator.validate(action.newValue)
+          } else {
+            newValue = action.newValue
+          }
+          console.log(validator, err, newValue)
+
+          if (err) {
+            state.tableRef.current!.focus()
+            data.get(editing.row, editing.col).error = [newValue, err]
+            console.log(err)
+            return { ...state, editing: undefined }
+          } else {
+            state.tableRef.current!.focus()
+            data.get(editing.row, editing.col).value = newValue
+            return { ...state, editing: undefined }
+          }
         }
       }
       break
@@ -278,10 +316,15 @@ function isNormalKey(key: string) {
   )
 }
 
+const validators = new ValueValidatorCollection()
+validators.add(new IntegerValidator())
+validators.add(new NumberValidator())
+validators.add(new StringValidator())
+
 export const SpreadSheet: React.FC = () => {
   const ref = useRef<HTMLTableElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
-    data: new DataSet(30, 8),
+    data: new Table(30, 8),
     selection: new Selection(0, 0, 0, 0),
     shift: false,
     tableRef: ref,
@@ -341,18 +384,20 @@ export const SpreadSheet: React.FC = () => {
               <RowHeadCell key={'r-' + row} value={row} />
               {iota(state.data.colNum, (col) => {
                 const location = Location.from(row, col)
+                let cell = state.data.get(row, col)
                 let editing = Location.equals(state.editing, location)
                 let selected = state.selection.contains(location)
 
                 return (
                   <Cell
                     key={`${row}-${col}`}
-                    cell={state.data.get(row, col)}
                     {...{
+                      cell,
                       selected,
                       editing,
                       dispatch,
                       location,
+                      version: cell.version,
                     }}
                   />
                 )
