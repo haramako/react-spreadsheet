@@ -10,74 +10,80 @@ import ReactDOM from 'react-dom'
 import './spreadsheet.css'
 import { Location, Selection, DataSet, CellData } from './model'
 import { iota } from './util'
-import { IDataSetView, ICellView, DataSetView } from './view'
+import { IDataSetView, ICellView, IHeaderView } from './view'
 
 //=================================================
 // Cell
 //=================================================
 
 type CellProps = {
-  selected?: Location
-  editing?: Location
-  selection: Selection
   location: Location
   cell: ICellView
+  selected: boolean
+  editing: boolean
   dispatch: React.Dispatch<any>
 }
 
-export const Cell: React.FC<CellProps> = ({
-  location,
-  cell,
-  selected,
-  editing,
-  selection,
-  dispatch,
-}) => {
-  const onClick = useCallback(
-    (e: React.MouseEvent) => {
-      dispatch({ type: 'cursor.set', location })
-      e.preventDefault()
-    },
-    [dispatch, location],
-  )
-  const onDoubleClick = useCallback(
-    (e: React.MouseEvent) => {
-      dispatch({ type: 'cell.doubleclick', location })
-    },
-    [dispatch, location],
-  )
-  const style: any = {}
-  if (Location.equals(selected, location)) {
-    style.backgroundColor = '#0f8'
-  } else if (selection.contains(location)) {
-    style.backgroundColor = 'cyan'
-  }
-  if (Location.equals(editing, location)) {
-    return (
-      <td className="spx__cell">
-        <CellEditor cell={cell} {...{ dispatch, location }} />
-      </td>
+export const Cell: React.FC<CellProps> = React.memo(
+  ({ location, cell, selected, editing, dispatch }) => {
+    const onClick = useCallback(
+      (e: React.MouseEvent) => {
+        dispatch({ type: 'cursor.set', location })
+        e.preventDefault()
+      },
+      [dispatch, location],
     )
-  } else {
-    return (
-      <td className="spx__cell" style={style} {...{ onClick, onDoubleClick }}>
-        {cell.value}
-      </td>
+    const onDoubleClick = useCallback(
+      (e: React.MouseEvent) => {
+        dispatch({ type: 'cell.doubleclick', location })
+      },
+      [dispatch, location],
     )
-  }
-}
+    const style: any = {}
+    if (selected) {
+      style.backgroundColor = 'cyan'
+    }
+    if (editing) {
+      return (
+        <td className="spx__cell">
+          <CellEditor cell={cell} {...{ dispatch, location }} />
+        </td>
+      )
+    } else {
+      return (
+        <td className="spx__cell" style={style} {...{ onClick, onDoubleClick }}>
+          {cell.value}
+        </td>
+      )
+    }
+  },
+)
 
 //=================================================
 // HeadCell
 //=================================================
 
 type HeadCellProps = {
-  value: string
+  value: IHeaderView
 }
 
-export const HeadCell: React.FC<HeadCellProps> = (props) => {
-  return <th className="spx__head-cell">{props.value}</th>
+export const HeadCell: React.FC<HeadCellProps> = React.memo((props) => {
+  return <th className="spx__head-cell">{props.value.name}</th>
+})
+
+//=================================================
+// RowHeadCell
+//=================================================
+
+type RowHeadCellProps = {
+  value: number
 }
+
+export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
+  ({ value }) => {
+    return <th className="spx__row-head-cell">{value}</th>
+  },
+)
 
 //=================================================
 // CellEditor
@@ -155,24 +161,8 @@ class Selector {
 }
 
 //=================================================
-// SpreadSheet
+// reduceSpreadSheet
 //=================================================
-type SpreadSheetProps = {
-  header: string[]
-  value: number[][]
-  onClick: () => void
-}
-
-type SpreadSheetState = {
-  data: IDataSetView
-  selected?: Location
-  selectStart?: Location
-  selection: Selection
-  editing?: Location
-  shift: boolean
-  tableRef: React.RefObject<HTMLTableElement>
-}
-
 function reduceSpreadSheet(
   state: SpreadSheetState,
   action: any,
@@ -240,6 +230,19 @@ function reduceSpreadSheet(
   return state
 }
 
+//=================================================
+// SpreadSheet
+//=================================================
+type SpreadSheetState = {
+  data: IDataSetView
+  selected?: Location
+  selectStart?: Location
+  selection: Selection
+  editing?: Location
+  shift: boolean
+  tableRef: React.RefObject<HTMLTableElement>
+}
+
 function keyToCursor(key: string) {
   switch (key) {
     case 'ArrowUp':
@@ -264,14 +267,11 @@ function isNormalKey(key: string) {
 export const SpreadSheet: React.FC = () => {
   const ref = useRef<HTMLTableElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
-    data: new DataSetView(new DataSet(30, 8)),
+    data: new DataSet(30, 8),
     selection: new Selection(0, 0, 0, 0),
     shift: false,
     tableRef: ref,
   })
-  const head = [...Array(state.data.colNum)].map((_, i) =>
-    String.fromCharCode('A'.charCodeAt(0) + i),
-  )
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -298,9 +298,8 @@ export const SpreadSheet: React.FC = () => {
         dispatch({ type: 'cursor.end_shift' })
       }
     },
-    [state],
+    [state, dispatch],
   )
-
   return (
     <div className="spx-outer">
       <table
@@ -312,25 +311,31 @@ export const SpreadSheet: React.FC = () => {
       >
         <thead className="spx__head">
           <tr>
-            {head.map((p, idx) => (
-              <HeadCell key={`h${idx}`} value={p} />
-            ))}
+            <th className="spx__super-head-cell"></th>
+            {iota(state.data.colNum, (col) => {
+              return (
+                <HeadCell key={'h-' + col} value={state.data.getHeader(col)} />
+              )
+            })}
           </tr>
         </thead>
         <tbody className="spx__body">
           {iota(state.data.rowNum, (row) => (
             <tr className="spx__row" key={row}>
-              {iota(state.data.colNum, (col) => (
-                <Cell
-                  key={`${row}-${col}`}
-                  cell={state.data.get(row, col)}
-                  location={Location.from(row, col)}
-                  selected={state.selected}
-                  editing={state.editing}
-                  selection={state.selection}
-                  {...{ dispatch }}
-                />
-              ))}
+              <RowHeadCell key={'r-' + row} value={row} />
+              {iota(state.data.colNum, (col) => {
+                const location = Location.from(row, col)
+                let editing = Location.equals(state.editing, location)
+                let selected = state.selection.contains(location)
+
+                return (
+                  <Cell
+                    key={`${row}-${col}`}
+                    cell={state.data.get(row, col)}
+                    {...{ selected, editing, dispatch, location }}
+                  />
+                )
+              })}
             </tr>
           ))}
         </tbody>
@@ -338,3 +343,7 @@ export const SpreadSheet: React.FC = () => {
     </div>
   )
 }
+
+//=================================================
+//
+//=================================================

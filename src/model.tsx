@@ -37,6 +37,10 @@ export class Location {
   }
 }
 
+//=================================================
+// Selection
+//=================================================
+
 export class Selection {
   top: number
   left: number
@@ -126,6 +130,27 @@ export class CellData {
     this.callback = callback
   }
 }
+type TypeKind = 'number' | 'string' | 'boolean' | 'object'
+
+export class CellType {
+  type: TypeKind
+
+  constructor(type: TypeKind) {
+    this.type = type
+  }
+}
+
+export class HeaderData {
+  name: string
+  type: CellType
+  unique: boolean
+  validator?: (value: any) => boolean
+  constructor(name: string, type: CellType) {
+    this.name = name
+    this.type = type
+    this.unique = false
+  }
+}
 
 //=================================================
 // DataSet
@@ -134,10 +159,23 @@ export class DataSet {
   colNum: number
   rowNum: number
   data: CellData[][]
+  headers: HeaderData[]
   constructor(rowNum: number, colNum: number) {
     this.rowNum = rowNum
     this.colNum = colNum
     this.data = iota(rowNum, (i) => iota(colNum, (j) => new CellData('' + j)))
+    this.headers = iota(
+      colNum,
+      (i) =>
+        new HeaderData(
+          String.fromCharCode('A'.charCodeAt(0) + i),
+          new CellType('string'),
+        ),
+    )
+  }
+
+  getHeader(col: number) {
+    return this.headers[col]
   }
 
   get(row: number, col: number) {

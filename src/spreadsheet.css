@@ -46,6 +46,21 @@
 
 .spx__head-cell {
     width: 200px;
+    z-index: 2;
+    border: solid 1px gray;
+    background-color: lightgray;
+}
+
+.spx__row-head-cell {
+    width: 40px;
+    z-index: 1;
+    border: solid 1px gray;
+    background-color: lightgray;
+}
+
+.spx__super-head-cell {
+    width: 40px;
+    z-index: 2;
     border: solid 1px gray;
     background-color: lightgray;
 }
