@@ -8,9 +8,15 @@ import React, {
 } from 'react'
 import ReactDOM from 'react-dom'
 import './spreadsheet.css'
-import { Location, Selection, DataSet, CellData } from './model'
+import {
+    Location,
+    Selection,
+    IDataSetView,
+    ICellView,
+    IHeaderView,
+} from './model'
+import { DataSet } from './table'
 import { iota } from './util'
-import { IDataSetView, ICellView, IHeaderView } from './view'
 
 //=================================================
 // Cell
