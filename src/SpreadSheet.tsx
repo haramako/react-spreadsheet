@@ -8,14 +8,23 @@ import React, {
 } from 'react'
 import ReactDOM from 'react-dom'
 import './spreadsheet.css'
-import { Location, Selection, ITable, ICell, IHeaderView } from './model'
-import { Table, ValueValidatorCollection } from './table'
+import {
+  Location,
+  Selection,
+  ITable,
+  ICell,
+  IHeader,
+  ValueValidatorCollection,
+} from './model'
+import { Table } from './table'
 import { iota } from './util'
 import {
+  BooleanValidator,
   IntegerValidator,
   NumberValidator,
   StringValidator,
 } from './validators'
+import { Visualizers } from './visualizers'
 
 //=================================================
 // Cell
@@ -23,6 +32,7 @@ import {
 
 type CellProps = {
   location: Location
+  header: IHeader
   cell: ICell
   selected: boolean
   editing: boolean
@@ -31,7 +41,7 @@ type CellProps = {
 }
 
 export const Cell: React.FC<CellProps> = React.memo(
-  ({ location, cell, selected, editing, version, dispatch }) => {
+  ({ location, cell, selected, editing, version, header, dispatch }) => {
     const onClick = useCallback(
       (e: React.MouseEvent) => {
         dispatch({ type: 'cursor.set', location })
@@ -49,6 +59,8 @@ export const Cell: React.FC<CellProps> = React.memo(
     if (selected) {
       style.backgroundColor = 'cyan'
     }
+
+    const Visualizer = Visualizers[header.type]
 
     let value = cell.value
     let err = cell.error
@@ -68,7 +80,7 @@ export const Cell: React.FC<CellProps> = React.memo(
     } else {
       return (
         <td className="spx__cell" style={style} {...{ onClick, onDoubleClick }}>
-          {value}
+          <Visualizer {...{ location, value, dispatch }} />
           {errMessage}
         </td>
       )
@@ -81,7 +93,7 @@ export const Cell: React.FC<CellProps> = React.memo(
 //=================================================z
 
 type HeadCellProps = {
-  value: IHeaderView
+  value: IHeader
 }
 
 export const HeadCell: React.FC<HeadCellProps> = React.memo((props) => {
@@ -243,6 +255,28 @@ function reduceSpreadSheet(
         selectStart,
       }
     }
+    case 'cell.change_value': {
+      let { data } = state
+      let location: Location = action.location
+      const header = data.getHeader(location.col)
+      const validator = validators.findValidator(header.validatorType)
+      let err: string | undefined
+      let newValue: any
+      if (validator) {
+        ;[err, newValue] = validator.validate(action.newValue)
+      } else {
+        newValue = action.newValue
+      }
+
+      const cell = data.get(location.row, location.col)
+      const oldVersion = cell.version
+      if (err) {
+        cell.error = [newValue, err]
+      } else {
+        cell.value = newValue
+      }
+      return state
+    }
     case 'editor.end':
       {
         let { data, editing } = state
@@ -257,12 +291,10 @@ function reduceSpreadSheet(
           } else {
             newValue = action.newValue
           }
-          console.log(validator, err, newValue)
 
           if (err) {
             state.tableRef.current!.focus()
             data.get(editing.row, editing.col).error = [newValue, err]
-            console.log(err)
             return { ...state, editing: undefined }
           } else {
             state.tableRef.current!.focus()
@@ -320,6 +352,7 @@ const validators = new ValueValidatorCollection()
 validators.add(new IntegerValidator())
 validators.add(new NumberValidator())
 validators.add(new StringValidator())
+validators.add(new BooleanValidator())
 
 export const SpreadSheet: React.FC = () => {
   const ref = useRef<HTMLTableElement>(null)
@@ -385,6 +418,7 @@ export const SpreadSheet: React.FC = () => {
               {iota(state.data.colNum, (col) => {
                 const location = Location.from(row, col)
                 let cell = state.data.get(row, col)
+                let header = state.data.getHeader(col)
                 let editing = Location.equals(state.editing, location)
                 let selected = state.selection.contains(location)
 
@@ -393,6 +427,7 @@ export const SpreadSheet: React.FC = () => {
                     key={`${row}-${col}`}
                     {...{
                       cell,
+                      header,
                       selected,
                       editing,
                       dispatch,
@@ -409,7 +444,3 @@ export const SpreadSheet: React.FC = () => {
     </div>
   )
 }
-
-//=================================================
-//
-//=================================================

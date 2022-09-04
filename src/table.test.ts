@@ -3,7 +3,7 @@ import {
   NumberValidator,
   StringValidator,
 } from './validators'
-import { ValueValidatorCollection } from './table'
+import { ValueValidatorCollection } from './model'
 
 it('NumberValidator', () => {
   const v = new NumberValidator()

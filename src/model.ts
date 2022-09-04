@@ -100,8 +100,11 @@ export class Selection {
 // Table models
 //=================================================
 
-export interface IHeaderView {
+export type CellType = 'number' | 'string' | 'boolean' | 'object'
+
+export interface IHeader {
   name: string
+  type: CellType
   validatorType: string
 }
 
@@ -114,6 +117,43 @@ export interface ICell {
 export interface ITable {
   get colNum(): number
   get rowNum(): number
-  getHeader(col: number): IHeaderView
+  getHeader(col: number): IHeader
   get(row: number, col: number): ICell
+}
+
+//=================================================
+// Validator
+//=================================================
+
+export interface IValueValidator {
+  isMatch(v: string): boolean
+  validate(v: any): [string | undefined, any]
+}
+
+export class ValueValidatorCollection {
+  validators: IValueValidator[] = []
+
+  constructor() {}
+
+  add(validator: IValueValidator) {
+    this.validators.push(validator)
+  }
+
+  findValidator(type: string): IValueValidator | undefined {
+    for (let validator of this.validators) {
+      if (validator.isMatch(type)) {
+        return validator
+      }
+    }
+    return undefined
+  }
+
+  validate(type: string, v: any): [string | undefined, any] {
+    const validator = this.findValidator(type)
+    if (validator) {
+      return validator.validate(v)
+    } else {
+      return ['validator not match', v]
+    }
+  }
 }

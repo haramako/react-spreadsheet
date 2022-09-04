@@ -55,3 +55,27 @@ export class StringValidator {
     }
   }
 }
+
+export class BooleanValidator {
+  isMatch(v: string): boolean {
+    return v == 'boolean'
+  }
+
+  validate(v: any): [string | undefined, any] {
+    if (v === undefined || v === null) {
+      return [undefined, false]
+    } else if (typeof v == 'boolean') {
+      return [undefined, v]
+    } else if (typeof v == 'string') {
+      if (v.toLowerCase() == 'true') {
+        return [undefined, true]
+      } else if (v.toLowerCase() == 'false') {
+        return [undefined, false]
+      } else {
+        return ['not a boolean', v]
+      }
+    } else {
+      return ['not a boolean', v]
+    }
+  }
+}

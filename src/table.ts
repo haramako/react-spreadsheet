@@ -1,4 +1,4 @@
-import { ICell, ITable } from './model'
+import { CellType, ICell, ITable } from './model'
 import { iota } from './util'
 
 //=================================================
@@ -46,11 +46,6 @@ export class CellData implements ICell {
 }
 
 //=================================================
-// CellType
-//=================================================
-type CellType = 'number' | 'string' | 'boolean' | 'object'
-
-//=================================================
 // HeaderData
 //=================================================
 export class HeaderData {
@@ -77,16 +72,18 @@ export class Table implements ITable {
   rowNum: number
   data: CellData[][]
   headers: HeaderData[]
+
   constructor(rowNum: number, colNum: number) {
     this.rowNum = rowNum
     this.colNum = colNum
     this.data = iota(rowNum, (i) => iota(colNum, (j) => new CellData('' + j)))
+    const types = ['string', 'number', 'boolean']
     this.headers = iota(
       colNum,
       (i) =>
         new HeaderData(
           String.fromCharCode('A'.charCodeAt(0) + i),
-          i % 2 == 0 ? 'string' : 'number',
+          types[i % 3] as CellType,
         ),
     )
   }
@@ -97,38 +94,5 @@ export class Table implements ITable {
 
   get(row: number, col: number) {
     return this.data[row][col]
-  }
-}
-
-export interface IValueValidator {
-  isMatch(v: string): boolean
-  validate(v: any): [string | undefined, any]
-}
-
-export class ValueValidatorCollection {
-  validators: IValueValidator[] = []
-
-  constructor() {}
-
-  add(validator: IValueValidator) {
-    this.validators.push(validator)
-  }
-
-  findValidator(type: string): IValueValidator | undefined {
-    for (let validator of this.validators) {
-      if (validator.isMatch(type)) {
-        return validator
-      }
-    }
-    return undefined
-  }
-
-  validate(type: string, v: any): [string | undefined, any] {
-    const validator = this.findValidator(type)
-    if (validator) {
-      return validator.validate(v)
-    } else {
-      return ['validator not match', v]
-    }
   }
 }
