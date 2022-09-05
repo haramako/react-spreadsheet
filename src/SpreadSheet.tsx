@@ -45,7 +45,7 @@ export const Cell: React.FC<CellProps> = React.memo(
     const onClick = useCallback(
       (e: React.MouseEvent) => {
         dispatch({ type: 'cursor.set', location })
-        e.preventDefault()
+        //e.preventDefault()
       },
       [dispatch, location],
     )
