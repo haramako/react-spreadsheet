@@ -28,9 +28,6 @@ export const BooleanVisualizer: React.FC<VisualizerProps> = ({
   const onChange = useCallback(() => {
     dispatch({ type: 'cell.change_value', location, newValue: !value })
   }, [value, dispatch])
-  const onClick = useCallback(() => {
-    dispatch({ type: 'cell.change_value', location, newValue: !value })
-  }, [value, dispatch])
   return <input type="checkbox" checked={!!value} onChange={onChange} />
 }
 
