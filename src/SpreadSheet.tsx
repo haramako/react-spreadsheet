@@ -17,7 +17,6 @@ import {
   ValueValidatorCollection,
 } from './model'
 import { Table } from './table'
-import { iota } from './util'
 import {
   BooleanValidator,
   IntegerValidator,
@@ -25,6 +24,8 @@ import {
   StringValidator,
 } from './validators'
 import { Visualizers } from './visualizers'
+import { VariableSizeGrid } from 'react-window'
+import { VariableSizeGridWithStickyCells } from './react-window-sticky'
 
 //=================================================
 // Cell
@@ -37,27 +38,28 @@ type CellProps = {
   selected: boolean
   editing: boolean
   version: number
+  style: any
   dispatch: React.Dispatch<any>
 }
 
 export const Cell: React.FC<CellProps> = React.memo(
-  ({ location, cell, selected, editing, version, header, dispatch }) => {
+  ({ location, cell, selected, editing, version, header, dispatch, style }) => {
     const onClick = useCallback(
       (e: React.MouseEvent) => {
-        dispatch({ type: 'cursor.set', location })
-        //e.preventDefault()
+        dispatch({ type: 'cursor.set', location, shiftKey: e.shiftKey })
       },
       [dispatch, location],
     )
     const onDoubleClick = useCallback(
       (e: React.MouseEvent) => {
+        console.log('double')
         dispatch({ type: 'cell.doubleclick', location })
       },
       [dispatch, location],
     )
-    const style: any = {}
+    console.log(location)
     if (selected) {
-      style.backgroundColor = 'cyan'
+      style = { ...style, backgroundColor: 'cyan' }
     }
 
     const Visualizer = Visualizers[header.type]
@@ -68,21 +70,25 @@ export const Cell: React.FC<CellProps> = React.memo(
     if (err) {
       value = err[0]
       errMessage = '(' + err[1] + ')'
-      style.backgroundColor = '#f88'
+      style = { ...style, backgroundColor: '#f88' }
     }
 
     if (editing) {
       return (
-        <td className="spx__cell">
+        <div className="spx__cell" style={style}>
           <CellEditor cell={cell} {...{ value, dispatch, location }} />
-        </td>
+        </div>
       )
     } else {
       return (
-        <td className="spx__cell" style={style} {...{ onClick, onDoubleClick }}>
+        <div
+          className="spx__cell"
+          style={style}
+          {...{ onClick, onDoubleClick }}
+        >
           <Visualizer {...{ location, value, dispatch }} />
           {errMessage}
-        </td>
+        </div>
       )
     }
   },
@@ -94,11 +100,18 @@ export const Cell: React.FC<CellProps> = React.memo(
 
 type HeadCellProps = {
   value: IHeader
+  style: any
 }
 
-export const HeadCell: React.FC<HeadCellProps> = React.memo((props) => {
-  return <th className="spx__head-cell">{props.value.name}</th>
-})
+export const HeadCell: React.FC<HeadCellProps> = React.memo(
+  ({ value, style }) => {
+    return (
+      <div className="spx__head-cell" style={style}>
+        {value.name}
+      </div>
+    )
+  },
+)
 
 //=================================================
 // RowHeadCell
@@ -106,11 +119,16 @@ export const HeadCell: React.FC<HeadCellProps> = React.memo((props) => {
 
 type RowHeadCellProps = {
   value: number
+  style: any
 }
 
 export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
-  ({ value }) => {
-    return <th className="spx__row-head-cell">{value}</th>
+  ({ value, style }) => {
+    return (
+      <div className="spx__row-head-cell" style={style}>
+        {value}
+      </div>
+    )
   },
 )
 
@@ -216,14 +234,10 @@ function reduceSpreadSheet(
       }
     case 'cursor.start_edit':
       return { ...state, editing: state.selected }
-    case 'cursor.start_shift':
-      return { ...state, shift: true }
-    case 'cursor.end_shift':
-      return { ...state, shift: false }
     case 'cursor.set': {
       const newLoc = action.location
       let { selectStart } = state
-      if (state.shift) {
+      if (action.shiftKey) {
         state.selection = new Selection(state.selectStart!, newLoc)
       } else {
         state.selection = new Selection(newLoc)
@@ -242,7 +256,7 @@ function reduceSpreadSheet(
         state.selected!.col + action.dx,
       )
       let { selectStart } = state
-      if (state.shift) {
+      if (action.shiftKey) {
         state.selection = new Selection(state.selectStart!, newLoc)
       } else {
         state.selection = new Selection(newLoc)
@@ -319,8 +333,7 @@ type SpreadSheetState = {
   selectStart?: Location
   selection: Selection
   editing?: Location
-  shift: boolean
-  tableRef: React.RefObject<HTMLTableElement>
+  tableRef: React.RefObject<HTMLDivElement>
 }
 
 function keyToCursor(key: string) {
@@ -359,7 +372,6 @@ export const SpreadSheet: React.FC = () => {
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
     data: new Table(30, 8),
     selection: new Selection(0, 0, 0, 0),
-    shift: false,
     tableRef: ref,
   })
 
@@ -367,16 +379,19 @@ export const SpreadSheet: React.FC = () => {
     (e: React.KeyboardEvent) => {
       if (state.editing) return
       if (!state.selected) return
-      if (e.key == 'Shift') {
-        dispatch({ type: 'cursor.start_shift' })
-      } else if (!e.ctrlKey && isNormalKey(e.key)) {
+      if (!e.ctrlKey && isNormalKey(e.key)) {
         dispatch({ type: 'cursor.start_edit' })
       } else if (e.key == 'F2') {
         dispatch({ type: 'cursor.start_edit' })
       } else {
         let d = keyToCursor(e.key)
         if (d) {
-          dispatch({ type: 'cursor.move', dx: d[0], dy: d[1] })
+          dispatch({
+            type: 'cursor.move',
+            dx: d[0],
+            dy: d[1],
+            shiftKey: e.shiftKey,
+          })
           e.preventDefault()
         }
       }
@@ -384,63 +399,112 @@ export const SpreadSheet: React.FC = () => {
     [state, dispatch],
   )
 
-  const onKeyUp = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key == 'Shift') {
-        dispatch({ type: 'cursor.end_shift' })
-      }
-    },
-    [state, dispatch],
-  )
+  function makeCell(props: {
+    columnIndex: number
+    rowIndex: number
+    style: any
+  }) {
+    const row = props.rowIndex - 1
+    const col = props.columnIndex - 1
+    const style = props.style
+    const data = state.data
+    if (col < 0 && row < 0) {
+      return (
+        <div className="spx__super-head-cell" style={style}>
+          &nbsp;
+        </div>
+      )
+    } else if (row < 0) {
+      return <HeadCell value={data.getHeader(col)} style={style} />
+    } else if (col < 0) {
+      return <RowHeadCell value={row} style={style} />
+    } else {
+      const location = Location.from(row, col)
+      let cell = data.get(row, col)
+      let header = data.getHeader(col)
+      let editing = Location.equals(state.editing, location)
+      let selected = state.selection.contains(location)
+      return (
+        <Cell
+          {...{
+            cell,
+            header,
+            selected,
+            editing,
+            dispatch,
+            location,
+            style,
+            version: cell.version,
+          }}
+        />
+      )
+    }
+  }
+
   return (
-    <div className="spx-outer">
-      <table
-        className="spx"
-        ref={ref}
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
+    <div onKeyDown={onKeyDown} tabIndex={1} ref={ref} className="spx">
+      <VariableSizeGrid
+        columnCount={state.data.colNum + 1}
+        rowCount={state.data.rowNum + 1}
+        columnWidth={(_: number) => 100}
+        rowHeight={(_: number) => 30}
+        height={400}
+        width={800}
       >
-        <thead className="spx__head">
-          <tr>
-            <th className="spx__super-head-cell"></th>
+        {makeCell}
+      </VariableSizeGrid>
+    </div>
+  )
+  /*
+return (
+  <div className="spx-outer">
+    <table
+      className="spx"
+      ref={ref}
+      tabIndex={0}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
+    >
+      <thead className="spx__head">
+        <tr>
+          <th className="spx__super-head-cell"></th>
+          {iota(state.data.colNum, (col) => {
+            return (
+              <HeadCell key={'h-' + col} value={state.data.getHeader(col)} />
+            )
+          })}
+        </tr>
+      </thead>
+      <tbody className="spx__body">
+        {iota(state.data.rowNum, (row) => (
+          <tr className="spx__row" key={row}>
+            <RowHeadCell key={'r-' + row} value={row} />
             {iota(state.data.colNum, (col) => {
+              const location = Location.from(row, col)
+              let cell = state.data.get(row, col)
+              let header = state.data.getHeader(col)
+              let editing = Location.equals(state.editing, location)
+              let selected = state.selection.contains(location)
+ 
               return (
-                <HeadCell key={'h-' + col} value={state.data.getHeader(col)} />
+                <Cell
+                  key={`${row}-${col}`}
+                  {...{
+                    cell,
+                    header,
+                    selected,
+                    editing,
+                    dispatch,
+                    location,
+                    version: cell.version,
+                  }}
+                />
               )
             })}
           </tr>
-        </thead>
-        <tbody className="spx__body">
-          {iota(state.data.rowNum, (row) => (
-            <tr className="spx__row" key={row}>
-              <RowHeadCell key={'r-' + row} value={row} />
-              {iota(state.data.colNum, (col) => {
-                const location = Location.from(row, col)
-                let cell = state.data.get(row, col)
-                let header = state.data.getHeader(col)
-                let editing = Location.equals(state.editing, location)
-                let selected = state.selection.contains(location)
-
-                return (
-                  <Cell
-                    key={`${row}-${col}`}
-                    {...{
-                      cell,
-                      header,
-                      selected,
-                      editing,
-                      dispatch,
-                      location,
-                      version: cell.version,
-                    }}
-                  />
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
+        ))}
+      </tbody>
+    </table>
+  </div>)
+  */
 }

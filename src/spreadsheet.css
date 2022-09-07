@@ -1,39 +1,15 @@
-.spx-outer {
-    overflow: auto;
-    height: 400px;
-}
-
 .spx {
     user-select: none;
-    border-collapse: collapse;
-    width: 800px;
 }
 
 .spx:focus {
     outline: none;
 }
 
-.spx__body {}
-
-.spx tbody {}
-
-.spx thead {}
-
-.spx th {
-    position: sticky;
-    top: 0;
-    left: 0;
-}
-
-.spx td {
-    border: 0.01px solid lightgray;
-}
-
 .spx__cell {
+    /*border: 0.01px solid lightgray;*/
     text-align: right;
 }
-
-.spx__cell-editor {}
 
 .spx__cell-editor input {
     padding: 0;
@@ -42,25 +18,20 @@
     text-align: right;
 }
 
-.spx__cell-editor input:focus {}
-
 .spx__head-cell {
-    width: 200px;
-    z-index: 2;
-    border: solid 1px gray;
     background-color: #ccf;
+    box-sizing: border-box;
+    border: solid 1px gray;
 }
 
 .spx__row-head-cell {
-    width: 40px;
-    z-index: 1;
     border: solid 1px gray;
+    box-sizing: border-box;
     background-color: #ccf;
 }
 
 .spx__super-head-cell {
-    width: 40px;
-    z-index: 2;
     border: solid 1px gray;
+    box-sizing: border-box;
     background-color: lightgray;
 }
