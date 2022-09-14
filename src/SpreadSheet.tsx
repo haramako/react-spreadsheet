@@ -6,14 +6,12 @@ import React, {
   useLayoutEffect,
   createContext,
   useContext,
-  CSSProperties,
 } from 'react'
 import './spreadsheet.css'
 import {
   Location,
   Selection,
   ITable,
-  ICell,
   IHeader,
   ValueValidatorCollection,
 } from './model'
@@ -23,7 +21,6 @@ import {
   NumberValidator,
   StringValidator,
 } from './validators'
-import { Visualizers } from './visualizers'
 import {
   VariableSizeGrid,
   VariableSizeList,
@@ -32,74 +29,7 @@ import {
   ListChildComponentProps,
 } from 'react-window'
 import shallowEquals from 'shallow-equals'
-
-//=================================================
-// Cell
-//=================================================
-
-type CellProps = {
-  location: Location
-  header: IHeader
-  cell: ICell
-  selected: boolean
-  editing: boolean
-  version: number
-  style: CSSProperties
-}
-
-export const Cell: React.FC<CellProps> = React.memo(
-  ({ location, cell, selected, editing, version, header, style }) => {
-    const dispatch = useTableDispatcher()
-    const onClick = useCallback(
-      (e: React.MouseEvent) => {
-        dispatch({ type: 'cursor.set', location, shiftKey: e.shiftKey })
-      },
-      [dispatch, location],
-    )
-    const onDoubleClick = useCallback(
-      (e: React.MouseEvent) => {
-        dispatch({ type: 'cell.doubleclick', location })
-      },
-      [dispatch, location],
-    )
-
-    if (selected) {
-      style = { ...style, backgroundColor: 'cyan' }
-    }
-
-    const Visualizer = Visualizers[header.type]
-
-    let value = cell.value
-    let err = cell.error
-    let errMessage: string | undefined
-    if (err) {
-      value = err[0]
-      errMessage = '(' + err[1] + ')'
-      style = { ...style, backgroundColor: '#f88' }
-    }
-
-    if (editing) {
-      return (
-        <div className="spx__cell" style={style}>
-          <CellEditor cell={cell} {...{ value, dispatch, location }} />
-        </div>
-      )
-    } else {
-      return (
-        <div
-          className="spx__cell"
-          style={style}
-          {...{ onClick, onDoubleClick }}
-        >
-          <Visualizer {...{ location, value, dispatch }} />
-          {errMessage}
-        </div>
-      )
-    }
-  },
-)
-
-Cell.displayName = 'Cell'
+import Cell from './Cell'
 
 //=================================================
 // HeadCell
@@ -138,53 +68,6 @@ export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
     )
   },
 )
-
-//=================================================
-// CellEditor
-//=================================================
-
-type CellEditorProps = {
-  cell: ICell
-  value: string
-  dispatch: React.Dispatch<any>
-  location: Location
-}
-
-export const CellEditor: React.FC<CellEditorProps> = ({
-  cell,
-  value,
-  dispatch,
-  location,
-}) => {
-  const [val, setVal] = useState(value)
-  const onChange = useCallback((newValue: string) => {
-    setVal(newValue)
-  }, [])
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Enter') {
-        dispatch({ type: 'editor.end', location, newValue: val })
-        dispatch({ type: 'cursor.move', dx: 0, dy: 1 })
-        e.preventDefault()
-      }
-    },
-    [val, dispatch, location],
-  )
-
-  return (
-    <div className="spx__cell-editor">
-      <input
-        type="text"
-        autoFocus
-        value={val}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={(e) => e.target.select()}
-        onKeyDown={onKeyDown}
-      />
-    </div>
-  )
-}
 
 //=================================================
 // reduceSpreadSheet
