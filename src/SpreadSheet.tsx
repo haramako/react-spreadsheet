@@ -2,11 +2,12 @@ import React, {
   useState,
   useRef,
   useCallback,
-  useEffect,
-  useMemo,
   useReducer,
+  useLayoutEffect,
+  createContext,
+  useContext,
+  CSSProperties,
 } from 'react'
-import ReactDOM from 'react-dom'
 import './spreadsheet.css'
 import {
   Location,
@@ -16,8 +17,6 @@ import {
   IHeader,
   ValueValidatorCollection,
 } from './model'
-import { Table } from './table'
-import { iota } from './util'
 import {
   BooleanValidator,
   IntegerValidator,
@@ -25,6 +24,14 @@ import {
   StringValidator,
 } from './validators'
 import { Visualizers } from './visualizers'
+import {
+  VariableSizeGrid,
+  VariableSizeList,
+  GridOnScrollProps,
+  GridChildComponentProps,
+  ListChildComponentProps,
+} from 'react-window'
+import shallowEquals from 'shallow-equals'
 
 //=================================================
 // Cell
@@ -37,15 +44,15 @@ type CellProps = {
   selected: boolean
   editing: boolean
   version: number
-  dispatch: React.Dispatch<any>
+  style: CSSProperties
 }
 
 export const Cell: React.FC<CellProps> = React.memo(
-  ({ location, cell, selected, editing, version, header, dispatch }) => {
+  ({ location, cell, selected, editing, version, header, style }) => {
+    const dispatch = useTableDispatcher()
     const onClick = useCallback(
       (e: React.MouseEvent) => {
-        dispatch({ type: 'cursor.set', location })
-        //e.preventDefault()
+        dispatch({ type: 'cursor.set', location, shiftKey: e.shiftKey })
       },
       [dispatch, location],
     )
@@ -55,9 +62,9 @@ export const Cell: React.FC<CellProps> = React.memo(
       },
       [dispatch, location],
     )
-    const style: any = {}
+
     if (selected) {
-      style.backgroundColor = 'cyan'
+      style = { ...style, backgroundColor: 'cyan' }
     }
 
     const Visualizer = Visualizers[header.type]
@@ -68,25 +75,31 @@ export const Cell: React.FC<CellProps> = React.memo(
     if (err) {
       value = err[0]
       errMessage = '(' + err[1] + ')'
-      style.backgroundColor = '#f88'
+      style = { ...style, backgroundColor: '#f88' }
     }
 
     if (editing) {
       return (
-        <td className="spx__cell">
+        <div className="spx__cell" style={style}>
           <CellEditor cell={cell} {...{ value, dispatch, location }} />
-        </td>
+        </div>
       )
     } else {
       return (
-        <td className="spx__cell" style={style} {...{ onClick, onDoubleClick }}>
+        <div
+          className="spx__cell"
+          style={style}
+          {...{ onClick, onDoubleClick }}
+        >
           <Visualizer {...{ location, value, dispatch }} />
           {errMessage}
-        </td>
+        </div>
       )
     }
   },
 )
+
+Cell.displayName = 'Cell'
 
 //=================================================
 // HeadCell
@@ -94,11 +107,18 @@ export const Cell: React.FC<CellProps> = React.memo(
 
 type HeadCellProps = {
   value: IHeader
+  style: any
 }
 
-export const HeadCell: React.FC<HeadCellProps> = React.memo((props) => {
-  return <th className="spx__head-cell">{props.value.name}</th>
-})
+export const HeadCell: React.FC<HeadCellProps> = React.memo(
+  ({ value, style }) => {
+    return (
+      <div className="spx__head-cell" style={style}>
+        {value.name}
+      </div>
+    )
+  },
+)
 
 //=================================================
 // RowHeadCell
@@ -106,11 +126,16 @@ export const HeadCell: React.FC<HeadCellProps> = React.memo((props) => {
 
 type RowHeadCellProps = {
   value: number
+  style: any
 }
 
 export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
-  ({ value }) => {
-    return <th className="spx__row-head-cell">{value}</th>
+  ({ value, style }) => {
+    return (
+      <div className="spx__row-head-cell" style={style}>
+        {value}
+      </div>
+    )
   },
 )
 
@@ -132,16 +157,13 @@ export const CellEditor: React.FC<CellEditorProps> = ({
   location,
 }) => {
   const [val, setVal] = useState(value)
-  const onChange = useCallback(
-    (newValue: string) => {
-      setVal(newValue)
-    },
-    [val],
-  )
+  const onChange = useCallback((newValue: string) => {
+    setVal(newValue)
+  }, [])
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key == 'Enter') {
+      if (e.key === 'Enter') {
         dispatch({ type: 'editor.end', location, newValue: val })
         dispatch({ type: 'cursor.move', dx: 0, dy: 1 })
         e.preventDefault()
@@ -149,6 +171,7 @@ export const CellEditor: React.FC<CellEditorProps> = ({
     },
     [val, dispatch, location],
   )
+
   return (
     <div className="spx__cell-editor">
       <input
@@ -161,34 +184,6 @@ export const CellEditor: React.FC<CellEditorProps> = ({
       />
     </div>
   )
-}
-
-//=================================================
-// Selector
-//=================================================
-
-class Selector {
-  rows: number
-  cols: number
-
-  constructor(rows: number, cols: number) {
-    this.rows = rows
-    this.cols = cols
-  }
-
-  move(loc: Location, x: number, y: number) {
-    const newLoc = { row: loc.row + y, col: loc.col + x }
-    if (
-      newLoc.col < 0 ||
-      newLoc.row < 0 ||
-      newLoc.col >= this.cols ||
-      newLoc.row >= this.rows
-    ) {
-      return undefined
-    } else {
-      return newLoc
-    }
-  }
 }
 
 //=================================================
@@ -216,14 +211,10 @@ function reduceSpreadSheet(
       }
     case 'cursor.start_edit':
       return { ...state, editing: state.selected }
-    case 'cursor.start_shift':
-      return { ...state, shift: true }
-    case 'cursor.end_shift':
-      return { ...state, shift: false }
     case 'cursor.set': {
       const newLoc = action.location
       let { selectStart } = state
-      if (state.shift) {
+      if (action.shiftKey) {
         state.selection = new Selection(state.selectStart!, newLoc)
       } else {
         state.selection = new Selection(newLoc)
@@ -242,7 +233,7 @@ function reduceSpreadSheet(
         state.selected!.col + action.dx,
       )
       let { selectStart } = state
-      if (state.shift) {
+      if (action.shiftKey) {
         state.selection = new Selection(state.selectStart!, newLoc)
       } else {
         state.selection = new Selection(newLoc)
@@ -269,7 +260,6 @@ function reduceSpreadSheet(
       }
 
       const cell = data.get(location.row, location.col)
-      const oldVersion = cell.version
       if (err) {
         cell.error = [newValue, err]
       } else {
@@ -305,7 +295,7 @@ function reduceSpreadSheet(
       }
       break
     default:
-      throw `uknown type ${action.type}`
+      throw new Error(`uknown type ${action.type}`)
   }
   return state
 }
@@ -313,14 +303,27 @@ function reduceSpreadSheet(
 //=================================================
 // SpreadSheet
 //=================================================
+export const TableContext = createContext<ITable>(null as unknown as ITable)
+
+export function useTable(): ITable {
+  return useContext(TableContext)
+}
+
+type TableDispatcher = (action: any) => void
+export const TableDispatcherContext = createContext<TableDispatcher>(() => {})
+
+export function useTableDispatcher(): TableDispatcher {
+  return useContext(TableDispatcherContext)
+}
+
 type SpreadSheetState = {
   data: ITable
   selected?: Location
   selectStart?: Location
   selection: Selection
   editing?: Location
-  shift: boolean
-  tableRef: React.RefObject<HTMLTableElement>
+  tableRef: React.RefObject<HTMLDivElement>
+  dispatch?: (action: any) => void
 }
 
 function keyToCursor(key: string) {
@@ -344,7 +347,7 @@ function keyToCursor(key: string) {
 
 function isNormalKey(key: string) {
   return (
-    key.length == 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
+    key.length === 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
   )
 }
 
@@ -354,12 +357,63 @@ validators.add(new NumberValidator())
 validators.add(new StringValidator())
 validators.add(new BooleanValidator())
 
-export const SpreadSheet: React.FC = () => {
+type SpreadSheetProps = {
+  table: ITable
+}
+
+function MakeCell({
+  columnIndex,
+  rowIndex,
+  style,
+  data,
+}: GridChildComponentProps<SpreadSheetState>) {
+  // `style` is created every render, so keep identity if not change.
+  const [savedStyle, setSavedStyle] = useState(style)
+  if (!shallowEquals(style, savedStyle)) {
+    setSavedStyle(style)
+  }
+
+  const location = Location.from(rowIndex, columnIndex)
+  const cell = data.data.get(rowIndex, columnIndex)
+  const header = data.data.getHeader(columnIndex)
+  const editing = Location.equals(data.editing, location)
+  const selected = data.selection.contains(location)
+  return (
+    <Cell
+      {...{
+        style: savedStyle,
+        cell,
+        header,
+        selected,
+        editing,
+        location,
+        version: cell.version,
+      }}
+    />
+  )
+}
+
+function makeColumnHead({
+  index,
+  style,
+  data,
+}: ListChildComponentProps<SpreadSheetState>) {
+  return <HeadCell value={data.data.getHeader(index)} style={style} />
+}
+
+function makeRowHead({
+  index,
+  style,
+  data,
+}: ListChildComponentProps<SpreadSheetState>) {
+  return <RowHeadCell value={index} style={style} />
+}
+
+export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   const ref = useRef<HTMLTableElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
-    data: new Table(30, 8),
+    data: table,
     selection: new Selection(0, 0, 0, 0),
-    shift: false,
     tableRef: ref,
   })
 
@@ -367,16 +421,19 @@ export const SpreadSheet: React.FC = () => {
     (e: React.KeyboardEvent) => {
       if (state.editing) return
       if (!state.selected) return
-      if (e.key == 'Shift') {
-        dispatch({ type: 'cursor.start_shift' })
-      } else if (!e.ctrlKey && isNormalKey(e.key)) {
+      if (!e.ctrlKey && isNormalKey(e.key)) {
         dispatch({ type: 'cursor.start_edit' })
-      } else if (e.key == 'F2') {
+      } else if (e.key === 'F2') {
         dispatch({ type: 'cursor.start_edit' })
       } else {
         let d = keyToCursor(e.key)
         if (d) {
-          dispatch({ type: 'cursor.move', dx: d[0], dy: d[1] })
+          dispatch({
+            type: 'cursor.move',
+            dx: d[0],
+            dy: d[1],
+            shiftKey: e.shiftKey,
+          })
           e.preventDefault()
         }
       }
@@ -384,63 +441,79 @@ export const SpreadSheet: React.FC = () => {
     [state, dispatch],
   )
 
-  const onKeyUp = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key == 'Shift') {
-        dispatch({ type: 'cursor.end_shift' })
-      }
-    },
-    [state, dispatch],
-  )
-  return (
-    <div className="spx-outer">
-      <table
-        className="spx"
-        ref={ref}
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
-      >
-        <thead className="spx__head">
-          <tr>
-            <th className="spx__super-head-cell"></th>
-            {iota(state.data.colNum, (col) => {
-              return (
-                <HeadCell key={'h-' + col} value={state.data.getHeader(col)} />
-              )
-            })}
-          </tr>
-        </thead>
-        <tbody className="spx__body">
-          {iota(state.data.rowNum, (row) => (
-            <tr className="spx__row" key={row}>
-              <RowHeadCell key={'r-' + row} value={row} />
-              {iota(state.data.colNum, (col) => {
-                const location = Location.from(row, col)
-                let cell = state.data.get(row, col)
-                let header = state.data.getHeader(col)
-                let editing = Location.equals(state.editing, location)
-                let selected = state.selection.contains(location)
+  const [scrollPos, setScrollPos] = useState([0, 0])
 
-                return (
-                  <Cell
-                    key={`${row}-${col}`}
-                    {...{
-                      cell,
-                      header,
-                      selected,
-                      editing,
-                      dispatch,
-                      location,
-                      version: cell.version,
-                    }}
-                  />
-                )
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+  const onScroll = useCallback((props: GridOnScrollProps) => {
+    setScrollPos([props.scrollLeft, props.scrollTop])
+  }, [])
+
+  const colHeadRef = useRef<VariableSizeList>(null)
+  const rowHeadRef = useRef<VariableSizeList>(null)
+
+  useLayoutEffect(() => {
+    colHeadRef.current?.scrollTo(scrollPos[0])
+    rowHeadRef.current?.scrollTo(scrollPos[1])
+  }, [scrollPos])
+
+  const columnWidth = useCallback((i: number) => {
+    return i % 2 === 0 ? 80 : 100
+  }, [])
+
+  const columnHeight = useCallback((i: number) => {
+    return i % 2 === 0 ? 20 : 30
+  }, [])
+
+  const scrollBarSize = 14
+  const totalWidth = 800
+  const totalHeight = 600
+
+  return (
+    <TableContext.Provider value={table}>
+      <TableDispatcherContext.Provider value={dispatch}>
+        <div onKeyDown={onKeyDown} tabIndex={1} ref={ref} className="spx">
+          <div style={{ display: 'flex' }}>
+            <div style={{ width: 30 }}>&nbsp;</div>
+            <VariableSizeList
+              ref={colHeadRef}
+              itemData={state}
+              itemCount={state.data.colNum}
+              itemSize={columnWidth}
+              height={30}
+              width={totalWidth - scrollBarSize}
+              layout={'horizontal'}
+              style={{ overflow: 'hidden' }}
+            >
+              {makeColumnHead}
+            </VariableSizeList>
+          </div>
+          <div style={{ display: 'flex' }}>
+            <VariableSizeList
+              ref={rowHeadRef}
+              itemData={state}
+              itemCount={state.data.rowNum}
+              itemSize={columnHeight}
+              height={totalHeight - scrollBarSize}
+              width={30}
+              layout={'vertical'}
+              style={{ overflow: 'hidden' }}
+            >
+              {makeRowHead}
+            </VariableSizeList>
+            <VariableSizeGrid
+              itemData={state}
+              columnCount={state.data.colNum}
+              rowCount={state.data.rowNum}
+              columnWidth={columnWidth}
+              rowHeight={columnHeight}
+              height={totalHeight}
+              width={totalWidth}
+              onScroll={onScroll}
+            >
+              {MakeCell}
+            </VariableSizeGrid>
+          </div>
+        </div>
+      </TableDispatcherContext.Provider>
+    </TableContext.Provider>
   )
 }
