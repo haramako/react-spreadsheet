@@ -20,18 +20,15 @@
 
 .spx__head-cell {
     background-color: #ccf;
-    box-sizing: border-box;
     border: solid 1px gray;
 }
 
 .spx__row-head-cell {
     border: solid 1px gray;
-    box-sizing: border-box;
     background-color: #ccf;
 }
 
 .spx__super-head-cell {
     border: solid 1px gray;
-    box-sizing: border-box;
     background-color: lightgray;
 }

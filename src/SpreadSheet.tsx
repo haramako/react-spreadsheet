@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useMemo,
   useReducer,
+  useLayoutEffect,
 } from 'react'
 import ReactDOM from 'react-dom'
 import './spreadsheet.css'
@@ -24,8 +25,15 @@ import {
   StringValidator,
 } from './validators'
 import { Visualizers } from './visualizers'
-import { VariableSizeGrid } from 'react-window'
+import {
+  VariableSizeGrid,
+  VariableSizeList,
+  ScrollDirection,
+  GridOnScrollProps,
+} from 'react-window'
 import { VariableSizeGridWithStickyCells } from './react-window-sticky'
+import { NamespaceBody } from 'typescript'
+import shallowEquals from 'shallow-equals'
 
 //=================================================
 // Cell
@@ -40,6 +48,14 @@ type CellProps = {
   version: number
   style: any
   dispatch: React.Dispatch<any>
+}
+
+function cellEaual(prev: Readonly<CellProps>, next: Readonly<CellProps>) {
+  let { style: prevStyle, ...prevRest } = prev
+  let { style: nextStyle, ...nextRest } = next
+  return (
+    shallowEquals(prevStyle, nextStyle) && shallowEquals(prevRest, nextRest)
+  )
 }
 
 export const Cell: React.FC<CellProps> = React.memo(
@@ -57,7 +73,7 @@ export const Cell: React.FC<CellProps> = React.memo(
       },
       [dispatch, location],
     )
-    console.log(location)
+    //console.log(location)
     if (selected) {
       style = { ...style, backgroundColor: 'cyan' }
     }
@@ -92,7 +108,10 @@ export const Cell: React.FC<CellProps> = React.memo(
       )
     }
   },
+  cellEaual,
 )
+
+Cell.displayName = 'Cell'
 
 //=================================================
 // HeadCell
@@ -334,6 +353,7 @@ type SpreadSheetState = {
   selection: Selection
   editing?: Location
   tableRef: React.RefObject<HTMLDivElement>
+  dispatch?: (action: any) => void
 }
 
 function keyToCursor(key: string) {
@@ -367,13 +387,72 @@ validators.add(new NumberValidator())
 validators.add(new StringValidator())
 validators.add(new BooleanValidator())
 
-export const SpreadSheet: React.FC = () => {
+function makeCell(props: {
+  columnIndex: number
+  rowIndex: number
+  style: any
+  data: SpreadSheetState
+}) {
+  const state = props.data
+  const row = props.rowIndex
+  const col = props.columnIndex
+  const style = props.style
+  const data = state.data
+  const location = Location.from(row, col)
+  let cell = data.get(row, col)
+  let header = data.getHeader(col)
+  let editing = Location.equals(state.editing, location)
+  let selected = state.selection.contains(location)
+  return (
+    <Cell
+      {...{
+        style,
+        cell,
+        header,
+        selected,
+        editing,
+        dispatch: state.dispatch!,
+        location,
+        version: cell.version,
+      }}
+    />
+  )
+}
+
+function makeColumnHead(props: {
+  index: number
+  style: any
+  data: SpreadSheetState
+}) {
+  const state = props.data
+  const col = props.index
+  const style = props.style
+  const data = state.data
+  return <HeadCell value={data.getHeader(col)} style={style} />
+}
+
+function makeRowHead(props: {
+  index: number
+  style: any
+  data: SpreadSheetState
+}) {
+  const state = props.data
+  const style = props.style
+  return <RowHeadCell value={props.index} style={style} />
+}
+
+type SpreadSheetProps = {
+  table: ITable
+}
+
+export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   const ref = useRef<HTMLTableElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
-    data: new Table(30, 8),
+    data: table,
     selection: new Selection(0, 0, 0, 0),
     tableRef: ref,
   })
+  state.dispatch = dispatch
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -399,112 +478,74 @@ export const SpreadSheet: React.FC = () => {
     [state, dispatch],
   )
 
-  function makeCell(props: {
-    columnIndex: number
-    rowIndex: number
-    style: any
-  }) {
-    const row = props.rowIndex - 1
-    const col = props.columnIndex - 1
-    const style = props.style
-    const data = state.data
-    if (col < 0 && row < 0) {
-      return (
-        <div className="spx__super-head-cell" style={style}>
-          &nbsp;
-        </div>
-      )
-    } else if (row < 0) {
-      return <HeadCell value={data.getHeader(col)} style={style} />
-    } else if (col < 0) {
-      return <RowHeadCell value={row} style={style} />
-    } else {
-      const location = Location.from(row, col)
-      let cell = data.get(row, col)
-      let header = data.getHeader(col)
-      let editing = Location.equals(state.editing, location)
-      let selected = state.selection.contains(location)
-      return (
-        <Cell
-          {...{
-            cell,
-            header,
-            selected,
-            editing,
-            dispatch,
-            location,
-            style,
-            version: cell.version,
-          }}
-        />
-      )
-    }
-  }
+  const [scrollPos, setScrollPos] = useState([0, 0])
+
+  const onScroll = useCallback((props: GridOnScrollProps) => {
+    setScrollPos([props.scrollLeft, props.scrollTop])
+  }, [])
+
+  const colHeadRef = useRef<VariableSizeList>(null)
+  const rowHeadRef = useRef<VariableSizeList>(null)
+
+  useLayoutEffect(() => {
+    colHeadRef.current?.scrollTo(scrollPos[0])
+    rowHeadRef.current?.scrollTo(scrollPos[1])
+  }, [scrollPos])
+
+  const columnWidth = useCallback((i: number) => {
+    return i % 2 == 0 ? 80 : 100
+  }, [])
+
+  const columnHeight = useCallback((i: number) => {
+    return i % 2 == 0 ? 20 : 30
+  }, [])
+
+  const scrollBarSize = 14
+  const totalWidth = 800
+  const totalHeight = 600
 
   return (
     <div onKeyDown={onKeyDown} tabIndex={1} ref={ref} className="spx">
-      <VariableSizeGrid
-        columnCount={state.data.colNum + 1}
-        rowCount={state.data.rowNum + 1}
-        columnWidth={(_: number) => 100}
-        rowHeight={(_: number) => 30}
-        height={400}
-        width={800}
-      >
-        {makeCell}
-      </VariableSizeGrid>
+      <div style={{ display: 'flex' }}>
+        <div style={{ width: 30 }}>&nbsp;</div>
+        <VariableSizeList
+          ref={colHeadRef}
+          itemCount={state.data.colNum}
+          itemSize={columnWidth}
+          height={30}
+          width={totalWidth - scrollBarSize}
+          direction={'horizontal'}
+          itemData={state}
+          style={{ overflow: 'hidden' }}
+        >
+          {makeColumnHead}
+        </VariableSizeList>
+      </div>
+      <div style={{ display: 'flex' }}>
+        <VariableSizeList
+          ref={rowHeadRef}
+          itemCount={state.data.rowNum}
+          itemSize={columnHeight}
+          height={totalHeight - scrollBarSize}
+          width={30}
+          direction={'vertical'}
+          style={{ overflow: 'hidden' }}
+        >
+          {makeRowHead}
+        </VariableSizeList>
+        <VariableSizeGrid
+          columnCount={state.data.colNum}
+          rowCount={state.data.rowNum}
+          columnWidth={columnWidth}
+          rowHeight={columnHeight}
+          height={totalHeight}
+          width={totalWidth}
+          itemData={state}
+          onScroll={onScroll}
+        >
+          {makeCell}
+        </VariableSizeGrid>
+      </div>
     </div>
   )
-  /*
-return (
-  <div className="spx-outer">
-    <table
-      className="spx"
-      ref={ref}
-      tabIndex={0}
-      onKeyDown={onKeyDown}
-      onKeyUp={onKeyUp}
-    >
-      <thead className="spx__head">
-        <tr>
-          <th className="spx__super-head-cell"></th>
-          {iota(state.data.colNum, (col) => {
-            return (
-              <HeadCell key={'h-' + col} value={state.data.getHeader(col)} />
-            )
-          })}
-        </tr>
-      </thead>
-      <tbody className="spx__body">
-        {iota(state.data.rowNum, (row) => (
-          <tr className="spx__row" key={row}>
-            <RowHeadCell key={'r-' + row} value={row} />
-            {iota(state.data.colNum, (col) => {
-              const location = Location.from(row, col)
-              let cell = state.data.get(row, col)
-              let header = state.data.getHeader(col)
-              let editing = Location.equals(state.editing, location)
-              let selected = state.selection.contains(location)
- 
-              return (
-                <Cell
-                  key={`${row}-${col}`}
-                  {...{
-                    cell,
-                    header,
-                    selected,
-                    editing,
-                    dispatch,
-                    location,
-                    version: cell.version,
-                  }}
-                />
-              )
-            })}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>)
-  */
 }

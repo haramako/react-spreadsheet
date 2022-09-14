@@ -1,15 +1,25 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
 import './board.css'
-import App from './App'
 import reportWebVitals from './reportWebVitals'
 import { SpreadSheet } from './SpreadSheet'
+import { Table } from './table'
+
+type AppProps = {}
+
+const App: React.FC<AppProps> = ({}: AppProps) => {
+  const table = useMemo(() => {
+    return new Table(300, 20)
+  }, [])
+
+  return <SpreadSheet table={table} />
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(
   <React.StrictMode>
-    <SpreadSheet />
+    <App />
   </React.StrictMode>,
 )
 
