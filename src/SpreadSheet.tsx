@@ -2,14 +2,12 @@ import React, {
   useState,
   useRef,
   useCallback,
-  useEffect,
-  useMemo,
   useReducer,
   useLayoutEffect,
   createContext,
   useContext,
+  CSSProperties,
 } from 'react'
-import ReactDOM from 'react-dom'
 import './spreadsheet.css'
 import {
   Location,
@@ -46,15 +44,7 @@ type CellProps = {
   selected: boolean
   editing: boolean
   version: number
-  style: any
-}
-
-function cellEaual(prev: Readonly<CellProps>, next: Readonly<CellProps>) {
-  let { style: prevStyle, ...prevRest } = prev
-  let { style: nextStyle, ...nextRest } = next
-  return (
-    shallowEquals(prevStyle, nextStyle) && shallowEquals(prevRest, nextRest)
-  )
+  style: CSSProperties
 }
 
 export const Cell: React.FC<CellProps> = React.memo(
@@ -68,12 +58,11 @@ export const Cell: React.FC<CellProps> = React.memo(
     )
     const onDoubleClick = useCallback(
       (e: React.MouseEvent) => {
-        console.log('double')
         dispatch({ type: 'cell.doubleclick', location })
       },
       [dispatch, location],
     )
-    //console.log(location)
+
     if (selected) {
       style = { ...style, backgroundColor: 'cyan' }
     }
@@ -108,7 +97,6 @@ export const Cell: React.FC<CellProps> = React.memo(
       )
     }
   },
-  cellEaual,
 )
 
 Cell.displayName = 'Cell'
@@ -169,16 +157,13 @@ export const CellEditor: React.FC<CellEditorProps> = ({
   location,
 }) => {
   const [val, setVal] = useState(value)
-  const onChange = useCallback(
-    (newValue: string) => {
-      setVal(newValue)
-    },
-    [val],
-  )
+  const onChange = useCallback((newValue: string) => {
+    setVal(newValue)
+  }, [])
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key == 'Enter') {
+      if (e.key === 'Enter') {
         dispatch({ type: 'editor.end', location, newValue: val })
         dispatch({ type: 'cursor.move', dx: 0, dy: 1 })
         e.preventDefault()
@@ -186,6 +171,7 @@ export const CellEditor: React.FC<CellEditorProps> = ({
     },
     [val, dispatch, location],
   )
+
   return (
     <div className="spx__cell-editor">
       <input
@@ -198,34 +184,6 @@ export const CellEditor: React.FC<CellEditorProps> = ({
       />
     </div>
   )
-}
-
-//=================================================
-// Selector
-//=================================================
-
-class Selector {
-  rows: number
-  cols: number
-
-  constructor(rows: number, cols: number) {
-    this.rows = rows
-    this.cols = cols
-  }
-
-  move(loc: Location, x: number, y: number) {
-    const newLoc = { row: loc.row + y, col: loc.col + x }
-    if (
-      newLoc.col < 0 ||
-      newLoc.row < 0 ||
-      newLoc.col >= this.cols ||
-      newLoc.row >= this.rows
-    ) {
-      return undefined
-    } else {
-      return newLoc
-    }
-  }
 }
 
 //=================================================
@@ -247,7 +205,6 @@ function reduceSpreadSheet(
         editing: undefined,
       }
     case 'cell.doubleclick':
-      console.log('double')
       return {
         ...state,
         editing: action.location,
@@ -303,7 +260,6 @@ function reduceSpreadSheet(
       }
 
       const cell = data.get(location.row, location.col)
-      const oldVersion = cell.version
       if (err) {
         cell.error = [newValue, err]
       } else {
@@ -339,7 +295,7 @@ function reduceSpreadSheet(
       }
       break
     default:
-      throw `uknown type ${action.type}`
+      throw new Error(`uknown type ${action.type}`)
   }
   return state
 }
@@ -391,7 +347,7 @@ function keyToCursor(key: string) {
 
 function isNormalKey(key: string) {
   return (
-    key.length == 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
+    key.length === 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
   )
 }
 
@@ -405,29 +361,27 @@ type SpreadSheetProps = {
   table: ITable
 }
 
-type MakeCellData = {
-  table: ITable
-  selection: Selection
-  editing?: Location
-}
-
 function MakeCell({
   columnIndex,
   rowIndex,
   style,
   data,
 }: GridChildComponentProps<SpreadSheetState>) {
-  const row = rowIndex
-  const col = columnIndex
-  const location = Location.from(row, col)
-  let cell = data.data.get(row, col)
-  let header = data.data.getHeader(col)
-  let editing = Location.equals(data.editing, location)
-  let selected = data.selection.contains(location)
+  // `style` is created every render, so keep identity if not change.
+  const [savedStyle, setSavedStyle] = useState(style)
+  if (!shallowEquals(style, savedStyle)) {
+    setSavedStyle(style)
+  }
+
+  const location = Location.from(rowIndex, columnIndex)
+  const cell = data.data.get(rowIndex, columnIndex)
+  const header = data.data.getHeader(columnIndex)
+  const editing = Location.equals(data.editing, location)
+  const selected = data.selection.contains(location)
   return (
     <Cell
       {...{
-        style,
+        style: savedStyle,
         cell,
         header,
         selected,
@@ -469,7 +423,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
       if (!state.selected) return
       if (!e.ctrlKey && isNormalKey(e.key)) {
         dispatch({ type: 'cursor.start_edit' })
-      } else if (e.key == 'F2') {
+      } else if (e.key === 'F2') {
         dispatch({ type: 'cursor.start_edit' })
       } else {
         let d = keyToCursor(e.key)
@@ -502,22 +456,16 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   }, [scrollPos])
 
   const columnWidth = useCallback((i: number) => {
-    return i % 2 == 0 ? 80 : 100
+    return i % 2 === 0 ? 80 : 100
   }, [])
 
   const columnHeight = useCallback((i: number) => {
-    return i % 2 == 0 ? 20 : 30
+    return i % 2 === 0 ? 20 : 30
   }, [])
 
   const scrollBarSize = 14
   const totalWidth = 800
   const totalHeight = 600
-
-  const makeCellData = {
-    table: table,
-    selection: state.selection,
-    editing: state.editing,
-  }
 
   return (
     <TableContext.Provider value={table}>
