@@ -6,6 +6,8 @@ import React, {
   useMemo,
   useReducer,
   useLayoutEffect,
+  createContext,
+  useContext,
 } from 'react'
 import ReactDOM from 'react-dom'
 import './spreadsheet.css'
@@ -17,7 +19,6 @@ import {
   IHeader,
   ValueValidatorCollection,
 } from './model'
-import { Table } from './table'
 import {
   BooleanValidator,
   IntegerValidator,
@@ -28,11 +29,10 @@ import { Visualizers } from './visualizers'
 import {
   VariableSizeGrid,
   VariableSizeList,
-  ScrollDirection,
   GridOnScrollProps,
+  GridChildComponentProps,
+  ListChildComponentProps,
 } from 'react-window'
-import { VariableSizeGridWithStickyCells } from './react-window-sticky'
-import { NamespaceBody } from 'typescript'
 import shallowEquals from 'shallow-equals'
 
 //=================================================
@@ -47,7 +47,6 @@ type CellProps = {
   editing: boolean
   version: number
   style: any
-  dispatch: React.Dispatch<any>
 }
 
 function cellEaual(prev: Readonly<CellProps>, next: Readonly<CellProps>) {
@@ -59,7 +58,8 @@ function cellEaual(prev: Readonly<CellProps>, next: Readonly<CellProps>) {
 }
 
 export const Cell: React.FC<CellProps> = React.memo(
-  ({ location, cell, selected, editing, version, header, dispatch, style }) => {
+  ({ location, cell, selected, editing, version, header, style }) => {
+    const dispatch = useTableDispatcher()
     const onClick = useCallback(
       (e: React.MouseEvent) => {
         dispatch({ type: 'cursor.set', location, shiftKey: e.shiftKey })
@@ -247,6 +247,7 @@ function reduceSpreadSheet(
         editing: undefined,
       }
     case 'cell.doubleclick':
+      console.log('double')
       return {
         ...state,
         editing: action.location,
@@ -346,6 +347,19 @@ function reduceSpreadSheet(
 //=================================================
 // SpreadSheet
 //=================================================
+export const TableContext = createContext<ITable>(null as unknown as ITable)
+
+export function useTable(): ITable {
+  return useContext(TableContext)
+}
+
+type TableDispatcher = (action: any) => void
+export const TableDispatcherContext = createContext<TableDispatcher>(() => {})
+
+export function useTableDispatcher(): TableDispatcher {
+  return useContext(TableDispatcherContext)
+}
+
 type SpreadSheetState = {
   data: ITable
   selected?: Location
@@ -387,22 +401,29 @@ validators.add(new NumberValidator())
 validators.add(new StringValidator())
 validators.add(new BooleanValidator())
 
-function makeCell(props: {
-  columnIndex: number
-  rowIndex: number
-  style: any
-  data: SpreadSheetState
-}) {
-  const state = props.data
-  const row = props.rowIndex
-  const col = props.columnIndex
-  const style = props.style
-  const data = state.data
+type SpreadSheetProps = {
+  table: ITable
+}
+
+type MakeCellData = {
+  table: ITable
+  selection: Selection
+  editing?: Location
+}
+
+function MakeCell({
+  columnIndex,
+  rowIndex,
+  style,
+  data,
+}: GridChildComponentProps<SpreadSheetState>) {
+  const row = rowIndex
+  const col = columnIndex
   const location = Location.from(row, col)
-  let cell = data.get(row, col)
-  let header = data.getHeader(col)
-  let editing = Location.equals(state.editing, location)
-  let selected = state.selection.contains(location)
+  let cell = data.data.get(row, col)
+  let header = data.data.getHeader(col)
+  let editing = Location.equals(data.editing, location)
+  let selected = data.selection.contains(location)
   return (
     <Cell
       {...{
@@ -411,7 +432,6 @@ function makeCell(props: {
         header,
         selected,
         editing,
-        dispatch: state.dispatch!,
         location,
         version: cell.version,
       }}
@@ -419,30 +439,20 @@ function makeCell(props: {
   )
 }
 
-function makeColumnHead(props: {
-  index: number
-  style: any
-  data: SpreadSheetState
-}) {
-  const state = props.data
-  const col = props.index
-  const style = props.style
-  const data = state.data
-  return <HeadCell value={data.getHeader(col)} style={style} />
+function makeColumnHead({
+  index,
+  style,
+  data,
+}: ListChildComponentProps<SpreadSheetState>) {
+  return <HeadCell value={data.data.getHeader(index)} style={style} />
 }
 
-function makeRowHead(props: {
-  index: number
-  style: any
-  data: SpreadSheetState
-}) {
-  const state = props.data
-  const style = props.style
-  return <RowHeadCell value={props.index} style={style} />
-}
-
-type SpreadSheetProps = {
-  table: ITable
+function makeRowHead({
+  index,
+  style,
+  data,
+}: ListChildComponentProps<SpreadSheetState>) {
+  return <RowHeadCell value={index} style={style} />
 }
 
 export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
@@ -452,7 +462,6 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
     selection: new Selection(0, 0, 0, 0),
     tableRef: ref,
   })
-  state.dispatch = dispatch
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -504,48 +513,59 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   const totalWidth = 800
   const totalHeight = 600
 
+  const makeCellData = {
+    table: table,
+    selection: state.selection,
+    editing: state.editing,
+  }
+
   return (
-    <div onKeyDown={onKeyDown} tabIndex={1} ref={ref} className="spx">
-      <div style={{ display: 'flex' }}>
-        <div style={{ width: 30 }}>&nbsp;</div>
-        <VariableSizeList
-          ref={colHeadRef}
-          itemCount={state.data.colNum}
-          itemSize={columnWidth}
-          height={30}
-          width={totalWidth - scrollBarSize}
-          direction={'horizontal'}
-          itemData={state}
-          style={{ overflow: 'hidden' }}
-        >
-          {makeColumnHead}
-        </VariableSizeList>
-      </div>
-      <div style={{ display: 'flex' }}>
-        <VariableSizeList
-          ref={rowHeadRef}
-          itemCount={state.data.rowNum}
-          itemSize={columnHeight}
-          height={totalHeight - scrollBarSize}
-          width={30}
-          direction={'vertical'}
-          style={{ overflow: 'hidden' }}
-        >
-          {makeRowHead}
-        </VariableSizeList>
-        <VariableSizeGrid
-          columnCount={state.data.colNum}
-          rowCount={state.data.rowNum}
-          columnWidth={columnWidth}
-          rowHeight={columnHeight}
-          height={totalHeight}
-          width={totalWidth}
-          itemData={state}
-          onScroll={onScroll}
-        >
-          {makeCell}
-        </VariableSizeGrid>
-      </div>
-    </div>
+    <TableContext.Provider value={table}>
+      <TableDispatcherContext.Provider value={dispatch}>
+        <div onKeyDown={onKeyDown} tabIndex={1} ref={ref} className="spx">
+          <div style={{ display: 'flex' }}>
+            <div style={{ width: 30 }}>&nbsp;</div>
+            <VariableSizeList
+              ref={colHeadRef}
+              itemData={state}
+              itemCount={state.data.colNum}
+              itemSize={columnWidth}
+              height={30}
+              width={totalWidth - scrollBarSize}
+              layout={'horizontal'}
+              style={{ overflow: 'hidden' }}
+            >
+              {makeColumnHead}
+            </VariableSizeList>
+          </div>
+          <div style={{ display: 'flex' }}>
+            <VariableSizeList
+              ref={rowHeadRef}
+              itemData={state}
+              itemCount={state.data.rowNum}
+              itemSize={columnHeight}
+              height={totalHeight - scrollBarSize}
+              width={30}
+              layout={'vertical'}
+              style={{ overflow: 'hidden' }}
+            >
+              {makeRowHead}
+            </VariableSizeList>
+            <VariableSizeGrid
+              itemData={state}
+              columnCount={state.data.colNum}
+              rowCount={state.data.rowNum}
+              columnWidth={columnWidth}
+              rowHeight={columnHeight}
+              height={totalHeight}
+              width={totalWidth}
+              onScroll={onScroll}
+            >
+              {MakeCell}
+            </VariableSizeGrid>
+          </div>
+        </div>
+      </TableDispatcherContext.Provider>
+    </TableContext.Provider>
   )
 }
