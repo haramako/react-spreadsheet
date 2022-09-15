@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Location, ICell } from './model'
+import { useTableDispatcher } from './SpreadSheet'
 
 type CellEditorProps = {
   cell: ICell
   value: string
-  dispatch: React.Dispatch<any>
   location: Location
 }
 
@@ -21,12 +21,8 @@ const useAutoFocus = () => {
   return inputRef
 }
 
-const CellEditor: React.FC<CellEditorProps> = ({
-  cell,
-  value,
-  dispatch,
-  location,
-}) => {
+const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
+  const dispatch = useTableDispatcher()
   const [val, setVal] = useState(value)
   const onChange = useCallback((newValue: string) => {
     setVal(newValue)
@@ -44,9 +40,29 @@ const CellEditor: React.FC<CellEditorProps> = ({
     },
     [val, dispatch, location],
   )
+  const ref = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (location) {
+      const id = `#cell-${location.row}-${location.col}`
+      const cellElement = document.querySelector<HTMLDivElement>(id)
+      const cellStyle = cellElement?.style
+      if (cellStyle && ref.current) {
+        var style = ref.current.style
+        style.left = cellStyle.left
+        style.top = cellStyle.top
+        style.width = cellStyle.width
+        style.height = cellStyle.height
+      }
+    }
+  }, [location])
 
   return (
-    <div className="spx__cell-editor">
+    <div
+      className="spx__cell-editor"
+      ref={ref}
+      style={{ zIndex: 2, position: 'absolute' }}
+    >
       <input
         ref={inputRef}
         type="text"

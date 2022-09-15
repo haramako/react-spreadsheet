@@ -6,7 +6,6 @@ import React, {
   useLayoutEffect,
   createContext,
   useContext,
-  useEffect,
   ReactPortal,
 } from 'react'
 import './spreadsheet.css'
@@ -34,6 +33,7 @@ import shallowEquals from 'shallow-equals'
 import Cell from './Cell'
 import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
+import SelectionRect from './SelectionRect'
 
 //=================================================
 // HeadCell
@@ -354,44 +354,27 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   const totalWidth = 800
   const totalHeight = 600
 
-  const editorRef = useRef<HTMLDivElement | null>(null)
-
   const innerRef = useRef<HTMLDivElement>(null)
-  let editorPortal: ReactPortal | null = null
 
-  // Create editor portal
+  // Create editor portal.
+  let editorPortal: ReactPortal | null = null
   if (innerRef.current && state.editing) {
     const cell = table.get(state.editing.row, state.editing.col)
     const value = cell.value
     editorPortal = createPortal(
-      <div
-        ref={editorRef}
-        key="editor"
-        style={{ zIndex: 1, position: 'absolute' }}
-      >
-        <CellEditor location={state.editing} {...{ cell, dispatch, value }} />
-      </div>,
+      <CellEditor location={state.editing} {...{ cell, dispatch, value }} />,
       innerRef.current,
     )
   }
 
-  if (!state.selection.isNone) {
+  // Create selection rect portal.
+  let selectionRectPortal: ReactPortal | null = null
+  if (innerRef.current && !state.selection.isNone()) {
+    selectionRectPortal = createPortal(
+      <SelectionRect selection={state.selection} />,
+      innerRef.current,
+    )
   }
-
-  useEffect(() => {
-    if (state.editing) {
-      const id = `#cell-${state.editing.row}-${state.editing.col}`
-      const cellElement = document.querySelector<HTMLDivElement>(id)
-      const cellStyle = cellElement?.style
-      if (cellStyle && editorRef.current) {
-        var style = editorRef.current.style
-        style.left = cellStyle.left
-        style.top = cellStyle.top
-        style.width = cellStyle.width
-        style.height = cellStyle.height
-      }
-    }
-  }, [state.editing])
 
   return (
     <TableContext.Provider value={table}>
@@ -441,6 +424,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
           </div>
         </div>
         {editorPortal}
+        {selectionRectPortal}
       </TableDispatcherContext.Provider>
     </TableContext.Provider>
   )

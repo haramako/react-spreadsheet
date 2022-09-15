@@ -1,5 +1,4 @@
 import React, { CSSProperties, useCallback } from 'react'
-import CellEditor from './CellEditor'
 import { Location, ICell, IHeader } from './model'
 import { useTableDispatcher } from './SpreadSheet'
 import { Visualizers } from './visualizers'
@@ -31,7 +30,7 @@ const Cell: React.FC<CellProps> = React.memo(
     )
 
     if (selected) {
-      style = { ...style, backgroundColor: 'cyan' }
+      //style = { ...style, backgroundColor: 'cyan' }
     }
 
     const Visualizer = Visualizers[header.type]
@@ -47,25 +46,17 @@ const Cell: React.FC<CellProps> = React.memo(
 
     const id = `cell-${location.row}-${location.col}`
 
-    if (false && editing) {
-      return (
-        <div className="spx__cell" style={style}>
-          <CellEditor cell={cell} {...{ value, dispatch, location }} />
-        </div>
-      )
-    } else {
-      return (
-        <div
-          id={id}
-          className="spx__cell"
-          style={style}
-          {...{ onClick, onDoubleClick }}
-        >
-          <Visualizer {...{ location, value, dispatch }} />
-          {errMessage}
-        </div>
-      )
-    }
+    return (
+      <div
+        id={id}
+        className="spx__cell"
+        style={style}
+        {...{ onClick, onDoubleClick }}
+      >
+        <Visualizer {...{ location, value, dispatch }} />
+        {errMessage}
+      </div>
+    )
   },
 )
 
