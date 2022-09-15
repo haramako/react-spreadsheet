@@ -5,6 +5,8 @@
 * DataSetに型を持たせる
 * コピー&ペースト
 - 表示してるセルだけrenderする
+* RowHead, ColHeadでまとめて選択
+* マウスのドラッグで選択
 
 * DataSetの型
   * JSON準拠 => number(int, float), string, bool, null

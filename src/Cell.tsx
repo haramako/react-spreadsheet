@@ -7,14 +7,12 @@ type CellProps = {
   location: Location
   header: IHeader
   cell: ICell
-  selected: boolean
-  editing: boolean
   version: number
   style: CSSProperties
 }
 
 const Cell: React.FC<CellProps> = React.memo(
-  ({ location, cell, selected, editing, version, header, style }) => {
+  ({ location, cell, version, header, style }) => {
     const dispatch = useTableDispatcher()
     const onClick = useCallback(
       (e: React.MouseEvent) => {
@@ -28,10 +26,6 @@ const Cell: React.FC<CellProps> = React.memo(
       },
       [dispatch, location],
     )
-
-    if (selected) {
-      //style = { ...style, backgroundColor: 'cyan' }
-    }
 
     const Visualizer = Visualizers[header.type]
 
