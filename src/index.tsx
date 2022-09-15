@@ -6,9 +6,7 @@ import reportWebVitals from './reportWebVitals'
 import { SpreadSheet } from './SpreadSheet'
 import { Table } from './table'
 
-type AppProps = {}
-
-const App: React.FC<AppProps> = ({}: AppProps) => {
+const App: React.FC = () => {
   const table = useMemo(() => {
     return new Table(300, 20)
   }, [])

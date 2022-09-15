@@ -7,7 +7,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
-  ReactElement,
+  ReactPortal,
 } from 'react'
 import './spreadsheet.css'
 import {
@@ -33,7 +33,7 @@ import {
 import shallowEquals from 'shallow-equals'
 import Cell from './Cell'
 import CellEditor from './CellEditor'
-import { createSecureContext } from 'tls'
+import { createPortal } from 'react-dom'
 
 //=================================================
 // HeadCell
@@ -296,14 +296,6 @@ function makeRowHead({
   return <RowHeadCell value={index} style={style} />
 }
 
-const EditorContext = createContext<ReactElement | null>(null)
-
-const GridInner: React.FC = (props: any) => {
-  const element = useContext(EditorContext)
-  const props2 = { ...props, children: [...props.children, element] }
-  return <div {...props2}></div>
-}
-
 export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   const ref = useRef<HTMLTableElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
@@ -339,15 +331,15 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   const [scrollPos, setScrollPos] = useState([0, 0])
 
   const onScroll = useCallback((props: GridOnScrollProps) => {
-    //setScrollPos([props.scrollLeft, props.scrollTop])
+    setScrollPos([props.scrollLeft, props.scrollTop])
   }, [])
 
   const colHeadRef = useRef<VariableSizeList>(null)
   const rowHeadRef = useRef<VariableSizeList>(null)
 
   useLayoutEffect(() => {
-    //colHeadRef.current?.scrollTo(scrollPos[0])
-    //rowHeadRef.current?.scrollTo(scrollPos[1])
+    colHeadRef.current?.scrollTo(scrollPos[0])
+    rowHeadRef.current?.scrollTo(scrollPos[1])
   }, [scrollPos])
 
   const columnWidth = useCallback((i: number) => {
@@ -364,20 +356,26 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
 
   const editorRef = useRef<HTMLDivElement | null>(null)
 
-  let editor: ReactElement | null = null
-  if (state.editing) {
+  const innerRef = useRef<HTMLDivElement>(null)
+  let editorPortal: ReactPortal | null = null
+
+  // Create editor portal
+  if (innerRef.current && state.editing) {
     const cell = table.get(state.editing.row, state.editing.col)
     const value = cell.value
-    //editor = <div ref={editorRef} key="editor" style={{ zIndex: 1, position: 'absolute', pointerEvents: 'none' }}>HOGE</div>
-    editor = (
+    editorPortal = createPortal(
       <div
         ref={editorRef}
         key="editor"
         style={{ zIndex: 1, position: 'absolute' }}
       >
         <CellEditor location={state.editing} {...{ cell, dispatch, value }} />
-      </div>
+      </div>,
+      innerRef.current,
     )
+  }
+
+  if (!state.selection.isNone) {
   }
 
   useEffect(() => {
@@ -385,7 +383,6 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
       const id = `#cell-${state.editing.row}-${state.editing.col}`
       const cellElement = document.querySelector<HTMLDivElement>(id)
       const cellStyle = cellElement?.style
-      console.log([id, cellElement, cellStyle])
       if (cellStyle && editorRef.current) {
         var style = editorRef.current.style
         style.left = cellStyle.left
@@ -399,52 +396,51 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   return (
     <TableContext.Provider value={table}>
       <TableDispatcherContext.Provider value={dispatch}>
-        <EditorContext.Provider value={editor}>
-          <div onKeyDown={onKeyDown} tabIndex={1} ref={ref} className="spx">
-            <div style={{ display: 'flex' }}>
-              <div style={{ width: 30 }}>&nbsp;</div>
-              <VariableSizeList
-                ref={colHeadRef}
-                itemData={state}
-                itemCount={state.data.colNum}
-                itemSize={columnWidth}
-                height={30}
-                width={totalWidth - scrollBarSize}
-                layout={'horizontal'}
-                style={{ overflow: 'hidden' }}
-              >
-                {makeColumnHead}
-              </VariableSizeList>
-            </div>
-            <div style={{ display: 'flex' }}>
-              <VariableSizeList
-                ref={rowHeadRef}
-                itemData={state}
-                itemCount={state.data.rowNum}
-                itemSize={columnHeight}
-                height={totalHeight - scrollBarSize}
-                width={30}
-                layout={'vertical'}
-                style={{ overflow: 'hidden' }}
-              >
-                {makeRowHead}
-              </VariableSizeList>
-              <VariableSizeGrid
-                itemData={state}
-                columnCount={state.data.colNum}
-                rowCount={state.data.rowNum}
-                columnWidth={columnWidth}
-                rowHeight={columnHeight}
-                height={totalHeight}
-                width={totalWidth}
-                onScroll={onScroll}
-                innerElementType={GridInner}
-              >
-                {MakeCell}
-              </VariableSizeGrid>
-            </div>
+        <div onKeyDown={onKeyDown} tabIndex={1} ref={ref} className="spx">
+          <div style={{ display: 'flex' }}>
+            <div style={{ width: 30 }}>&nbsp;</div>
+            <VariableSizeList
+              ref={colHeadRef}
+              itemData={state}
+              itemCount={state.data.colNum}
+              itemSize={columnWidth}
+              height={30}
+              width={totalWidth - scrollBarSize}
+              layout={'horizontal'}
+              style={{ overflow: 'hidden' }}
+            >
+              {makeColumnHead}
+            </VariableSizeList>
           </div>
-        </EditorContext.Provider>
+          <div style={{ display: 'flex' }}>
+            <VariableSizeList
+              ref={rowHeadRef}
+              itemData={state}
+              itemCount={state.data.rowNum}
+              itemSize={columnHeight}
+              height={totalHeight - scrollBarSize}
+              width={30}
+              layout={'vertical'}
+              style={{ overflow: 'hidden' }}
+            >
+              {makeRowHead}
+            </VariableSizeList>
+            <VariableSizeGrid
+              itemData={state}
+              columnCount={state.data.colNum}
+              rowCount={state.data.rowNum}
+              columnWidth={columnWidth}
+              rowHeight={columnHeight}
+              height={totalHeight}
+              width={totalWidth}
+              onScroll={onScroll}
+              innerRef={innerRef}
+            >
+              {MakeCell}
+            </VariableSizeGrid>
+          </div>
+        </div>
+        {editorPortal}
       </TableDispatcherContext.Provider>
     </TableContext.Provider>
   )
