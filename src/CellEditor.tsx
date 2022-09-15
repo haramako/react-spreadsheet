@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Location, ICell } from './model'
 
 type CellEditorProps = {
@@ -6,6 +6,19 @@ type CellEditorProps = {
   value: string
   dispatch: React.Dispatch<any>
   location: Location
+}
+
+const useAutoFocus = () => {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus({ preventScroll: true })
+      inputRef.current.select()
+    }
+  }, [])
+
+  return inputRef
 }
 
 const CellEditor: React.FC<CellEditorProps> = ({
@@ -18,6 +31,8 @@ const CellEditor: React.FC<CellEditorProps> = ({
   const onChange = useCallback((newValue: string) => {
     setVal(newValue)
   }, [])
+
+  const inputRef = useAutoFocus()
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -33,11 +48,10 @@ const CellEditor: React.FC<CellEditorProps> = ({
   return (
     <div className="spx__cell-editor">
       <input
+        ref={inputRef}
         type="text"
-        autoFocus
         value={val}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={(e) => e.target.select()}
         onKeyDown={onKeyDown}
       />
     </div>

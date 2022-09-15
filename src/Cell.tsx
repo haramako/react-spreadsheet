@@ -45,7 +45,9 @@ const Cell: React.FC<CellProps> = React.memo(
       style = { ...style, backgroundColor: '#f88' }
     }
 
-    if (editing) {
+    const id = `cell-${location.row}-${location.col}`
+
+    if (false && editing) {
       return (
         <div className="spx__cell" style={style}>
           <CellEditor cell={cell} {...{ value, dispatch, location }} />
@@ -54,6 +56,7 @@ const Cell: React.FC<CellProps> = React.memo(
     } else {
       return (
         <div
+          id={id}
           className="spx__cell"
           style={style}
           {...{ onClick, onDoubleClick }}
