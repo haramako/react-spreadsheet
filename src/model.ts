@@ -2,19 +2,19 @@
 // Location
 //=================================================
 
-export class Location {
-  static cache = new Map<number, Location>()
+export class Position {
+  static cache = new Map<number, Position>()
 
   row: number
   col: number
 
-  static from(row: number, col: number): Location {
+  static from(row: number, col: number): Position {
     const key = row * 1000 + col
-    if (Location.cache.has(key)) {
-      return Location.cache.get(key)!
+    if (Position.cache.has(key)) {
+      return Position.cache.get(key)!
     } else {
-      const l = new Location(row, col)
-      Location.cache.set(key, l)
+      const l = new Position(row, col)
+      Position.cache.set(key, l)
       return l
     }
   }
@@ -24,7 +24,7 @@ export class Location {
     this.col = col
   }
 
-  static equals(a?: Location, b?: Location) {
+  static equals(a?: Position, b?: Position) {
     if (a === b) {
       return true
     } else if (!a || !b) {
@@ -46,18 +46,18 @@ export class Selection {
   right: number
 
   constructor(top: number, left: number, bottom?: number, right?: number)
-  constructor(l: Location, start?: Location)
+  constructor(l: Position, start?: Position)
 
   constructor(...args: any[]) {
     if (typeof args[0] != 'number') {
       if (args.length === 1) {
-        const l = args[0] as Location
+        const l = args[0] as Position
         this.top = l.row
         this.left = l.col
         this.bottom = l.row + 1
         this.right = l.col + 1
       } else {
-        const [l, start] = args as Location[]
+        const [l, start] = args as Position[]
         this.top = Math.min(l.row, start.row)
         this.left = Math.min(l.col, start.col)
         this.bottom = Math.max(l.row, start.row) + 1
@@ -86,7 +86,7 @@ export class Selection {
     return this.bottom - this.top
   }
 
-  contains(l: Location): boolean {
+  contains(l: Position): boolean {
     return (
       l.row >= this.top &&
       l.row < this.bottom &&

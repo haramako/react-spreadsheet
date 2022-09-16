@@ -1,10 +1,10 @@
 import React, { CSSProperties, useCallback } from 'react'
-import { Location, ICell, IHeader } from './model'
+import { Position, ICell, IHeader } from './model'
 import { useTableDispatcher } from './SpreadSheet'
 import { Visualizers } from './visualizers'
 
 type CellProps = {
-  location: Location
+  location: Position
   header: IHeader
   cell: ICell
   version: number

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react'
-import { Location } from './model'
+import { Position } from './model'
 
 //=================================================
 // Visualizer
@@ -7,7 +7,7 @@ import { Location } from './model'
 export type Visualizer = React.FC<VisualizerProps>
 
 type VisualizerProps = {
-  location: Location
+  location: Position
   value: any
   dispatch: React.Dispatch<any>
 }

@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Location, ICell } from './model'
+import { Position, ICell } from './model'
 import { useTableDispatcher } from './SpreadSheet'
 
 type CellEditorProps = {
   cell: ICell
   value: string
-  location: Location
+  location: Position
 }
 
 const useAutoFocus = () => {

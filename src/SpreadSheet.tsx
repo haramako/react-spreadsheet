@@ -10,7 +10,7 @@ import React, {
 } from 'react'
 import './spreadsheet.css'
 import {
-  Location,
+  Position,
   Selection,
   ITable,
   IHeader,
@@ -115,7 +115,7 @@ function reduceSpreadSheet(
       }
     }
     case 'cursor.move': {
-      const newLoc = Location.from(
+      const newLoc = Position.from(
         state.selected!.row + action.dy,
         state.selected!.col + action.dx,
       )
@@ -135,7 +135,7 @@ function reduceSpreadSheet(
     }
     case 'cell.change_value': {
       let { data } = state
-      let location: Location = action.location
+      let location: Position = action.location
       const header = data.getHeader(location.col)
       const validator = validators.findValidator(header.validatorType)
       let err: string | undefined
@@ -205,10 +205,10 @@ export function useTableDispatcher(): TableDispatcher {
 
 type SpreadSheetState = {
   data: ITable
-  selected?: Location
-  selectStart?: Location
+  selected?: Position
+  selectStart?: Position
   selection: Selection
-  editing?: Location
+  editing?: Position
   tableRef: React.RefObject<HTMLDivElement>
   dispatch?: (action: any) => void
 }
@@ -260,10 +260,10 @@ function MakeCell({
     setSavedStyle(style)
   }
 
-  const location = Location.from(rowIndex, columnIndex)
+  const location = Position.from(rowIndex, columnIndex)
   const cell = data.data.get(rowIndex, columnIndex)
   const header = data.data.getHeader(columnIndex)
-  const editing = Location.equals(data.editing, location)
+  const editing = Position.equals(data.editing, location)
   const selected = data.selection.contains(location)
   return (
     <Cell
@@ -297,7 +297,7 @@ function makeRowHead({
 }
 
 export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
-  const ref = useRef<HTMLTableElement>(null)
+  const ref = useRef<HTMLDivElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
     data: table,
     selection: new Selection(0, 0, 0, 0),
@@ -376,10 +376,29 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
     )
   }
 
+  function findAncestor(e: HTMLElement, sel: string) {
+    for (let el: HTMLElement | null = e; el; el = el.parentElement) {
+      if (el.matches(sel)) {
+        return el
+      }
+    }
+    return null
+  }
+
+  const onClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const t2 = findAncestor(e.target as HTMLElement, '.spx__cell')
+    console.log(
+      t2?.getAttribute('id'),
+      e.bubbles,
+      e.defaultPrevented,
+      e.eventPhase,
+    )
+  }, [])
+
   return (
     <TableContext.Provider value={table}>
       <TableDispatcherContext.Provider value={dispatch}>
-        <div onKeyDown={onKeyDown} tabIndex={1} ref={ref} className="spx">
+        <div tabIndex={1} className="spx" {...{ ref, onKeyDown, onClick }}>
           <div style={{ display: 'flex' }}>
             <div style={{ width: 30 }}>&nbsp;</div>
             <VariableSizeList
