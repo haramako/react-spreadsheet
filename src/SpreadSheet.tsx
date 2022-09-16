@@ -34,6 +34,7 @@ import Cell from './Cell'
 import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
+import { reduceSpreadSheet, SpreadSheetState } from './reduceSpreadSheet'
 
 //=================================================
 // HeadCell
@@ -76,117 +77,6 @@ export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
 //=================================================
 // reduceSpreadSheet
 //=================================================
-function reduceSpreadSheet(
-  state: SpreadSheetState,
-  action: any,
-): SpreadSheetState {
-  switch (action.type) {
-    case 'cell.select':
-      break
-    case 'cell.click':
-      return {
-        ...state,
-        selectStart: action.location,
-        selected: action.location,
-        selection: new Selection(action.location),
-        editing: undefined,
-      }
-    case 'cell.doubleclick':
-      return {
-        ...state,
-        editing: action.location,
-      }
-    case 'cursor.start_edit':
-      return { ...state, editing: state.selected }
-    case 'cursor.set': {
-      const newLoc = action.location
-      let { selectStart } = state
-      if (action.shiftKey) {
-        state.selection = new Selection(state.selectStart!, newLoc)
-      } else {
-        state.selection = new Selection(newLoc)
-        selectStart = newLoc
-      }
-      return {
-        ...state,
-        editing: undefined,
-        selected: newLoc,
-        selectStart,
-      }
-    }
-    case 'cursor.move': {
-      const newLoc = Position.from(
-        state.selected!.row + action.dy,
-        state.selected!.col + action.dx,
-      )
-      let { selectStart } = state
-      if (action.shiftKey) {
-        state.selection = new Selection(state.selectStart!, newLoc)
-      } else {
-        state.selection = new Selection(newLoc)
-        selectStart = newLoc
-      }
-      return {
-        ...state,
-        editing: undefined,
-        selected: newLoc,
-        selectStart,
-      }
-    }
-    case 'cell.change_value': {
-      let { data } = state
-      let location: Position = action.location
-      const header = data.getHeader(location.col)
-      const validator = validators.findValidator(header.validatorType)
-      let err: string | undefined
-      let newValue: any
-      if (validator) {
-        ;[err, newValue] = validator.validate(action.newValue)
-      } else {
-        newValue = action.newValue
-      }
-
-      const cell = data.get(location.row, location.col)
-      if (err) {
-        cell.error = [newValue, err]
-      } else {
-        cell.value = newValue
-      }
-      return state
-    }
-    case 'editor.end':
-      {
-        let { data, editing } = state
-        if (editing != null) {
-          // Validate new value.
-          const header = data.getHeader(editing.col)
-          const validator = validators.findValidator(header.validatorType)
-          let err: string | undefined
-          let newValue: any
-          if (validator) {
-            ;[err, newValue] = validator.validate(action.newValue)
-          } else {
-            newValue = action.newValue
-          }
-
-          if (err) {
-            state.tableRef.current!.focus()
-            data.get(editing.row, editing.col).error = [newValue, err]
-            return { ...state, editing: undefined }
-          } else {
-            state.tableRef.current!.focus()
-            data.get(editing.row, editing.col).value = newValue
-            return { ...state, editing: undefined }
-          }
-        }
-      }
-      break
-    default:
-      throw new Error(`uknown type ${action.type}`)
-  }
-  return state
-}
-
 //=================================================
 // SpreadSheet
 //=================================================
@@ -201,16 +91,6 @@ export const TableDispatcherContext = createContext<TableDispatcher>(() => {})
 
 export function useTableDispatcher(): TableDispatcher {
   return useContext(TableDispatcherContext)
-}
-
-type SpreadSheetState = {
-  data: ITable
-  selected?: Position
-  selectStart?: Position
-  selection: Selection
-  editing?: Position
-  tableRef: React.RefObject<HTMLDivElement>
-  dispatch?: (action: any) => void
 }
 
 function keyToCursor(key: string) {
@@ -237,12 +117,6 @@ function isNormalKey(key: string) {
     key.length === 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
   )
 }
-
-const validators = new ValueValidatorCollection()
-validators.add(new IntegerValidator())
-validators.add(new NumberValidator())
-validators.add(new StringValidator())
-validators.add(new BooleanValidator())
 
 type SpreadSheetProps = {
   table: ITable
