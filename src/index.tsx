@@ -29,25 +29,39 @@ type AppState = {
 class TableView implements ITable {
   table: ITable
   filter: string = ''
+  filterNumber: number | null = null
   rows: number[] = []
 
-  constructor(table: ITable) {
+  constructor(table: ITable, filter: string) {
     this.table = table
-    this.setFilter('')
+    this.setFilter(filter)
+  }
+
+  #match(value: any) {
+    switch (typeof value) {
+      case 'number':
+        return value === this.filterNumber
+      case 'string':
+        return value.includes(this.filter)
+      default:
+        return value.toString().includes(this.filter)
+    }
   }
 
   setFilter(v: string) {
     this.filter = v
+    this.filterNumber = parseInt(v)
     this.rows = []
     if (v === '') {
       for (let i = 0; i < this.table.rowNum; i++) {
         this.rows.push(i)
       }
     } else {
+      const filerNum = parseInt(v)
       for (let i = 0; i < this.table.rowNum; i++) {
         for (let col = 0; col < this.table.colNum; col++) {
           const value = this.table.get(i, col).value
-          if (value.toString().includes(v)) {
+          if (this.#match(value)) {
             this.rows.push(i)
             break
           }
@@ -73,19 +87,16 @@ class TableView implements ITable {
 
 export function reduceApp(state: AppState, action: any): AppState {
   switch (action.type) {
-    case 'set_table':
+    case 'set_table': {
       const table = action.table
-      const view = new TableView(table)
+      const view = new TableView(table, '')
       return { ...state, table, view }
-    case 'filter.set':
+    }
+    case 'filter.set': {
       const filter = action.value
-      if (filter === '') {
-        state.view.setFilter(filter)
-        return { ...state, filter }
-      } else {
-        state.view.setFilter(filter)
-        return { ...state, filter }
-      }
+      const view = new TableView(state.table, filter)
+      return { ...state, filter, view }
+    }
     default:
       throw new Error(`unknown type ${action.type}`)
   }
@@ -95,7 +106,7 @@ const App: React.FC = () => {
   const [state, dispatch] = useReducer(reduceApp, {
     filter: '',
     table: new JSONTable(data),
-    view: new TableView(new JSONTable(data)),
+    view: new TableView(new JSONTable(data), ''),
   })
 
   const [loaded, setLoaded] = useState(false)

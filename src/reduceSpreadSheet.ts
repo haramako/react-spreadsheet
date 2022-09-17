@@ -23,6 +23,16 @@ export function reduceSpreadSheet(
   action: any,
 ): SpreadSheetState {
   switch (action.type) {
+    case 'set_table':
+      const table = action.table
+      return {
+        ...state,
+        data: table,
+        selection: new Selection(0, 0, 0, 0),
+        editing: undefined,
+        selected: undefined,
+        selectStart: undefined,
+      }
     case 'cell.select':
       break
     case 'cell.click':

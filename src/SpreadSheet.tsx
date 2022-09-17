@@ -256,7 +256,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
     filter: '',
   })
   if (table != state.data) {
-    state.data = table
+    dispatch({ type: 'set_table', table: table })
   }
 
   const onKeyDown = useCallback(
@@ -297,7 +297,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
 
   const scrollBarSize = 14
   const totalWidth = 1800
-  const totalHeight = 1200
+  const totalHeight = 600
 
   const innerRef = useRef<HTMLDivElement>(null)
 
