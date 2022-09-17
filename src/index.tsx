@@ -9,22 +9,10 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 import reportWebVitals from './reportWebVitals'
 import { SpreadSheet } from './SpreadSheet'
-import { loadTsv } from './loadTsv'
 import SpreadSheetFilter from './SpreadSheetFilter'
 import { ITable } from './model'
 import { Dataset } from './dataset'
 import { HeaderData } from './table'
-
-const data: any[] = [
-  { name: 'slime', hp: 10 },
-  { name: 'bat', hp: 20 },
-]
-
-let curGuid = 1
-for (let row of data) {
-  row._guid = curGuid++
-  row._order = row._guid
-}
 
 type ViewLink = { name: string; func: (data: any) => ITable }
 
@@ -52,6 +40,7 @@ function filterFunc(filter: string) {
 }
 
 export function reduceApp(state: AppState, action: any): AppState {
+  console.log('reduceApp', action)
   switch (action.type) {
     case 'set_view': {
       const viewLink: ViewLink = action.viewLink
@@ -83,12 +72,12 @@ function createDataset() {
   ds.createTable('character', [
     { name: 'name' },
     { name: 'category' },
-    { name: 'level' },
+    { name: 'level', type: 'number', validatorType: 'int' },
   ])
   ds.createTable('status_info', [
     { name: 'name' },
     { name: 'symbol' },
-    { name: 'id' },
+    { name: 'id', type: 'number', validatorType: 'int' },
   ])
 
   return ds
@@ -96,10 +85,9 @@ function createDataset() {
 
 async function loadFiles(dispatch: React.Dispatch<any>) {
   for (let file of ['character', 'status_info']) {
-    await fetch(file + '.tsv')
-      .then((res) => res.text())
-      .then((txt) => {
-        const json = loadTsv(txt)
+    await fetch(file + '.json')
+      .then((res) => res.json())
+      .then((json) => {
         dispatch({ type: 'load_table', tableName: file, data: json })
       })
   }
@@ -130,11 +118,11 @@ const App: React.FC = () => {
 
   const loaded = useRef(false)
   useEffect(() => {
-    if (!loaded.current) {
+    if (!loaded.current && !state.view) {
       loaded.current = true
       loadFiles(dispatch)
     }
-  }, [dispatch, loaded])
+  }, [dispatch, loaded, state.view])
 
   const onViewClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -146,7 +134,7 @@ const App: React.FC = () => {
     [state.viewLinks],
   )
 
-  if (!loaded.current) {
+  if (!loaded.current && !state.view) {
     return <div>Loading...</div>
   }
 
