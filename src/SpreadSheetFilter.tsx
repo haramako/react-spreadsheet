@@ -1,14 +1,4 @@
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  useReducer,
-  useLayoutEffect,
-  createContext,
-  useContext,
-  ReactPortal,
-} from 'react'
-import { useTableDispatcher } from './SpreadSheet'
+import React, { useCallback } from 'react'
 
 type SpreadSheetFilterProps = {
   value: string
@@ -23,7 +13,7 @@ const SpreadSheetFilter: React.FC<SpreadSheetFilterProps> = ({
     (e: React.ChangeEvent<HTMLInputElement>) => {
       dispatch({ type: 'filter.set', value: e.target.value })
     },
-    [dispatch, value],
+    [dispatch],
   )
   return (
     <div>

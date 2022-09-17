@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Position, ICell } from './model'
 import { useTableDispatcher } from './SpreadSheet'
 
@@ -9,7 +9,7 @@ type CellEditorProps = {
 }
 
 const useAutoFocus = () => {
-  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null)
 
   useEffect(() => {
     if (inputRef.current) {
@@ -31,7 +31,7 @@ const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
   const inputRef = useAutoFocus()
 
   const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
       if (e.key === 'Enter') {
         dispatch({ type: 'editor.end', location, newValue: val })
         dispatch({ type: 'cursor.move', dx: 0, dy: 1 })
@@ -64,7 +64,7 @@ const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
       style={{ zIndex: 2, position: 'absolute' }}
     >
       <textarea
-        ref={inputRef}
+        ref={inputRef as React.RefObject<HTMLTextAreaElement>}
         style={{ display: 'inline-block', width: '100%', height: '100%' }}
         value={val}
         onChange={(e) => onChange(e.target.value)}

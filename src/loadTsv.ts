@@ -2,8 +2,9 @@ import { tsv2json } from 'tsv-json'
 
 export function loadTsv(src: string) {
   const rows = tsv2json(src)
-  let keys: string[] | undefined = undefined
-  let types: string[] | undefined = undefined
+
+  let keys: string[] = []
+  let types: string[] = []
   const data: any[] = []
   for (let row of rows) {
     if (row[0].startsWith('$KEY')) {
@@ -15,17 +16,17 @@ export function loadTsv(src: string) {
     } else if (row[0].startsWith('$') || row[0].startsWith('#')) {
       // DO NOTHING
     } else {
-      const obj: any = {}
+      var obj: any = {}
       row.map((e, i) => {
-        switch (types![i]) {
+        switch (types[i]) {
           case 'int':
-            obj[keys![i]] = parseInt(e)
+            obj[keys[i]] = parseInt(e)
             break
           case 'bool':
-            obj[keys![i]] = e == '〇' || e == 'true'
+            obj[keys[i]] = e === '〇' || e === 'true'
             break
           default:
-            obj[keys![i]] = e.replace('\\n', '\n')
+            obj[keys[i]] = e.replace('\\n', '\n')
             break
         }
       })

@@ -14,6 +14,10 @@ const Cell: React.FC<CellProps> = React.memo(
   ({ location, cell, version, header, style }) => {
     const Visualizer = Visualizers[header.type]
 
+    if (version !== 0) {
+      style = { ...style, backgroundColor: '#ff88' }
+    }
+
     let value = cell.value
     let err = cell.error
     let errMessage: string | undefined

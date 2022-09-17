@@ -1,16 +1,10 @@
-import React, {
-  forwardRef,
-  useEffect,
-  useMemo,
-  useReducer,
-  useState,
-} from 'react'
+import React, { useEffect, useReducer, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
 import './board.css'
 import reportWebVitals from './reportWebVitals'
 import { SpreadSheet } from './SpreadSheet'
-import { JSONTable, Table } from './table'
+import { JSONTable } from './table'
 import { loadTsv } from './loadTsv'
 import SpreadSheetFilter from './SpreadSheetFilter'
 import { ICell, ITable } from './model'
@@ -57,7 +51,6 @@ class TableView implements ITable {
         this.rows.push(i)
       }
     } else {
-      const filerNum = parseInt(v)
       for (let i = 0; i < this.table.rowNum; i++) {
         for (let col = 0; col < this.table.colNum; col++) {
           const value = this.table.get(i, col).value
@@ -109,19 +102,18 @@ const App: React.FC = () => {
     view: new TableView(new JSONTable(data), ''),
   })
 
-  const [loaded, setLoaded] = useState(false)
+  const loaded = useRef(false)
   useEffect(() => {
-    if (!loaded) {
-      setLoaded(true)
+    if (!loaded.current) {
+      loaded.current = true
       fetch('/data.tsv')
         .then((res) => res.text())
         .then((txt) => {
           const json = loadTsv(txt)
-          console.log(json.length)
           dispatch({ type: 'set_table', table: new JSONTable(json) })
         })
     }
-  }, [])
+  }, [dispatch, loaded])
 
   return (
     <>

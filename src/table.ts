@@ -18,7 +18,7 @@ export class CellData implements ICell {
   }
 
   set value(v: string) {
-    if (this.#error !== undefined || this.#value != v) {
+    if (this.#error !== undefined || this.#value !== v) {
       this.#value = v
       this.#error = undefined
       this.#version++
@@ -57,7 +57,7 @@ export class HeaderData {
     this.name = name
     this.type = type
     this.validatorType = type
-    if (type == 'number') {
+    if (type === 'number') {
       this.validatorType = 'int'
     }
     this.unique = false
@@ -116,7 +116,7 @@ export class JSONCellData implements ICell {
   }
 
   set value(v: string) {
-    if (this.#error !== undefined || this.value != v) {
+    if (this.#error !== undefined || this.value !== v) {
       this.#data[this.#key] = v
       this.#error = undefined
       this.#version++

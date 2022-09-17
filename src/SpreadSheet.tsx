@@ -49,22 +49,20 @@ export const HeadCell: React.FC<HeadCellProps> = React.memo(
 
 type RowHeadCellProps = {
   value: number
+  name: string
   style: any
 }
 
 export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
-  ({ value, style }) => {
+  ({ value, name, style }) => {
     return (
       <div className="spx__row-head-cell" style={style}>
-        {value}
+        {value}:{name}
       </div>
     )
   },
 )
 
-//=================================================
-// reduceSpreadSheet
-//=================================================
 //=================================================
 // SpreadSheet
 //=================================================
@@ -155,7 +153,8 @@ function makeRowHead({
   style,
   data,
 }: ListChildComponentProps<SpreadSheetState>) {
-  return <RowHeadCell value={index} style={style} />
+  const name = data.data.colNum > 2 ? data.data.get(index, 2).value : ''
+  return <RowHeadCell value={index} style={style} name={name} />
 }
 
 function findAncestor(e: HTMLElement, sel: string) {
@@ -255,7 +254,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
     tableRef: ref,
     filter: '',
   })
-  if (table != state.data) {
+  if (table !== state.data) {
     dispatch({ type: 'set_table', table: table })
   }
 
@@ -292,7 +291,8 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   }, [])
 
   const columnHeight = useCallback((i: number) => {
-    return i % 2 === 0 ? 20 : 30
+    return 20
+    //return i % 2 === 0 ? 20 : 30
   }, [])
 
   const scrollBarSize = 14
@@ -348,7 +348,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
           }}
         >
           <div style={{ display: 'flex' }}>
-            <div style={{ width: 30 }}>&nbsp;</div>
+            <div style={{ width: 240 }}>&nbsp;</div>
             <VariableSizeList
               ref={colHeadRef}
               itemData={state}
@@ -369,7 +369,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
               itemCount={state.data.rowNum}
               itemSize={columnHeight}
               height={totalHeight - scrollBarSize}
-              width={30}
+              width={240}
               layout={'vertical'}
               style={{ overflow: 'hidden' }}
             >
