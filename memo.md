@@ -1,12 +1,15 @@
+* テーブルの読み込み/保存
 * 選択したセルにスクロールするようにする
 * 編集中にマウス等でセルを移動した際に、編集中の値を反映するようにする
 * コマンド/Undo/Redo化をする(reducer?)
-- DataSetをModelとViewModelに分ける
 * DataSetに型を持たせる
 * コピー&ペースト
-- 表示してるセルだけrenderする
 * RowHead, ColHeadでまとめて選択
-* マウスのドラッグで選択
+* 一番右と一番下のセルの座標が取得できないのを修正
+
+- マウスのドラッグで選択
+- DataSetをModelとViewModelに分ける
+- 表示してるセルだけrenderする
 
 * DataSetの型
   * JSON準拠 => number(int, float), string, bool, null

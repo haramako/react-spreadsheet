@@ -96,3 +96,88 @@ export class Table implements ITable {
     return this.data[row][col]
   }
 }
+
+//=================================================
+// JSONCellData
+//=================================================
+export class JSONCellData implements ICell {
+  #data: any
+  #key: string
+  #version: number = 0
+  #error?: [string, string]
+
+  constructor(data: object, key: string) {
+    this.#data = data
+    this.#key = key
+  }
+
+  get value() {
+    return this.#data[this.#key] as string
+  }
+
+  set value(v: string) {
+    if (this.#error !== undefined || this.value != v) {
+      this.#data[this.#key] = v
+      this.#error = undefined
+      this.#version++
+    }
+  }
+
+  get hasError(): boolean {
+    return !!this.#error
+  }
+
+  get error(): [string, string] | undefined {
+    return this.#error
+  }
+
+  set error(v: [string, string] | undefined) {
+    if (this.#error !== v) {
+      this.#error = v
+      this.#version++
+    }
+  }
+
+  get version() {
+    return this.#version
+  }
+}
+
+//=================================================
+// JSONTable
+//=================================================
+export class JSONTable implements ITable {
+  colNum: number
+  rowNum: number
+  data: JSONCellData[][]
+  keys: string[]
+  headers: HeaderData[]
+
+  constructor(data: any[]) {
+    this.data = []
+    this.keys = []
+    for (let key in data[0]) {
+      if (data[0].hasOwnProperty(key)) {
+        this.keys.push(key)
+      }
+    }
+
+    this.colNum = this.keys.length
+    this.rowNum = data.length
+
+    this.data = data.map((row) =>
+      this.keys.map((key) => new JSONCellData(row, key)),
+    )
+    this.headers = this.keys.map((key) => {
+      return new HeaderData(key, typeof data[0][key] as CellType)
+    })
+  }
+
+  getHeader(col: number) {
+    return this.headers[col]
+  }
+
+  get(row: number, col: number) {
+    return this.data[row][col]
+  }
+}

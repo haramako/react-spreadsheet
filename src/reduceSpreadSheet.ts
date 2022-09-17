@@ -15,6 +15,7 @@ export type SpreadSheetState = {
   editing?: Position
   tableRef: React.RefObject<HTMLDivElement>
   dispatch?: (action: any) => void
+  filter: string
 }
 
 export function reduceSpreadSheet(
@@ -122,6 +123,10 @@ export function reduceSpreadSheet(
         }
       }
       break
+    case 'filter.set': {
+      let { value } = action
+      return { ...state, filter: value }
+    }
     default:
       throw new Error(`uknown type ${action.type}`)
   }

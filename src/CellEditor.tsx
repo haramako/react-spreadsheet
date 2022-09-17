@@ -9,7 +9,7 @@ type CellEditorProps = {
 }
 
 const useAutoFocus = () => {
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (inputRef.current) {
@@ -31,7 +31,7 @@ const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
   const inputRef = useAutoFocus()
 
   const onKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter') {
         dispatch({ type: 'editor.end', location, newValue: val })
         dispatch({ type: 'cursor.move', dx: 0, dy: 1 })
@@ -63,9 +63,9 @@ const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
       ref={ref}
       style={{ zIndex: 2, position: 'absolute' }}
     >
-      <input
+      <textarea
         ref={inputRef}
-        type="text"
+        style={{ display: 'inline-block', width: '100%', height: '100%' }}
         value={val}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}

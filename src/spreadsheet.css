@@ -7,8 +7,9 @@
 }
 
 .spx__cell {
-    /*border: 0.01px solid lightgray;*/
+    border: 0.01px solid lightgray;
     text-align: right;
+    overflow: hidden;
 }
 
 .spx__cell-editor input {

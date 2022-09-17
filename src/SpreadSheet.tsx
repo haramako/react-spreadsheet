@@ -206,74 +206,10 @@ function getCellPosition(target: EventTarget | Element | null) {
   return cell && idToPosition(cell.id)
 }
 
-export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
-  const ref = useRef<HTMLDivElement>(null)
-  const [state, dispatch] = useReducer(reduceSpreadSheet, {
-    data: table,
-    selection: new Selection(0, 0, 0, 0),
-    tableRef: ref,
-  })
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (state.editing) return
-      if (!state.selected) return
-      if (!e.ctrlKey && isNormalKey(e.key)) {
-        dispatch({ type: 'cursor.start_edit' })
-      } else if (e.key === 'F2') {
-        dispatch({ type: 'cursor.start_edit' })
-      } else {
-        let d = keyToCursor(e.key)
-        if (d) {
-          dispatch({
-            type: 'cursor.move',
-            dx: d[0],
-            dy: d[1],
-            shiftKey: e.shiftKey,
-          })
-          e.preventDefault()
-        }
-      }
-    },
-    [state, dispatch],
-  )
-
-  const { onScroll, colHeadRef, rowHeadRef } = useScrollSynchronization()
-
-  const columnWidth = useCallback((i: number) => {
-    return i % 2 === 0 ? 80 : 100
-  }, [])
-
-  const columnHeight = useCallback((i: number) => {
-    return i % 2 === 0 ? 20 : 30
-  }, [])
-
-  const scrollBarSize = 14
-  const totalWidth = 800
-  const totalHeight = 600
-
-  const innerRef = useRef<HTMLDivElement>(null)
-
-  // Create editor portal.
-  let editorPortal: ReactPortal | null = null
-  if (innerRef.current && state.editing) {
-    const cell = table.get(state.editing.row, state.editing.col)
-    const value = cell.value
-    editorPortal = createPortal(
-      <CellEditor location={state.editing} {...{ cell, dispatch, value }} />,
-      innerRef.current,
-    )
-  }
-
-  // Create selection rect portal.
-  let selectionRectPortal: ReactPortal | null = null
-  if (innerRef.current && !state.selection.isNone()) {
-    selectionRectPortal = createPortal(
-      <SelectionRect selection={state.selection} />,
-      innerRef.current,
-    )
-  }
-
+/**
+ * Pointer events for selection.
+ */
+function usePointerEvents(dispatch: React.Dispatch<any>) {
   const [mouseDragging, setMouseDragging] = useState(false)
 
   const onPointerDown = useCallback(
@@ -307,6 +243,83 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
     setMouseDragging(false)
     ;(e.target as Element).releasePointerCapture(e.pointerId)
   }, [])
+
+  return { onPointerDown, onPointerMove, onPointerUp }
+}
+
+export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
+  const ref = useRef<HTMLDivElement>(null)
+  const [state, dispatch] = useReducer(reduceSpreadSheet, {
+    data: table,
+    selection: new Selection(0, 0, 0, 0),
+    tableRef: ref,
+    filter: '',
+  })
+  if (table != state.data) {
+    state.data = table
+  }
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (state.editing) return
+      if (!state.selected) return
+      if (!e.ctrlKey && isNormalKey(e.key)) {
+        dispatch({ type: 'cursor.start_edit' })
+      } else if (e.key === 'F2') {
+        dispatch({ type: 'cursor.start_edit' })
+      } else {
+        let d = keyToCursor(e.key)
+        if (d) {
+          dispatch({
+            type: 'cursor.move',
+            dx: d[0],
+            dy: d[1],
+            shiftKey: e.shiftKey,
+          })
+          e.preventDefault()
+        }
+      }
+    },
+    [state, dispatch],
+  )
+
+  const { onScroll, colHeadRef, rowHeadRef } = useScrollSynchronization()
+  const { onPointerDown, onPointerMove, onPointerUp } =
+    usePointerEvents(dispatch)
+
+  const columnWidth = useCallback((i: number) => {
+    return i % 2 === 0 ? 80 : 100
+  }, [])
+
+  const columnHeight = useCallback((i: number) => {
+    return i % 2 === 0 ? 20 : 30
+  }, [])
+
+  const scrollBarSize = 14
+  const totalWidth = 1800
+  const totalHeight = 1200
+
+  const innerRef = useRef<HTMLDivElement>(null)
+
+  // Create editor portal.
+  let editorPortal: ReactPortal | null = null
+  if (innerRef.current && state.editing) {
+    const cell = table.get(state.editing.row, state.editing.col)
+    const value = cell.value
+    editorPortal = createPortal(
+      <CellEditor location={state.editing} {...{ cell, dispatch, value }} />,
+      innerRef.current,
+    )
+  }
+
+  // Create selection rect portal.
+  let selectionRectPortal: ReactPortal | null = null
+  if (innerRef.current && !state.selection.isNone()) {
+    selectionRectPortal = createPortal(
+      <SelectionRect selection={state.selection} />,
+      innerRef.current,
+    )
+  }
 
   const onDoubleClick = useCallback(
     (e: React.MouseEvent) => {
