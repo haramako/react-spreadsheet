@@ -106,6 +106,8 @@ type TableInfo = {
   headers: HeaderData[]
 }
 
+export type FilterFunc = (data: any, headers: HeaderData[]) => boolean
+
 //=================================================
 // Dataset
 //=================================================
@@ -173,11 +175,18 @@ export class Dataset {
     return index
   }
 
-  select(tableName: string, filter?: (x: any) => boolean): Row[] {
+  select(tableName: string, filter?: FilterFunc, columns?: string[]): Row[] {
     const index = this.#getIndex(tableName)
+    let headers: HeaderData[]
+    if (columns) {
+      const origHeaders = this.tables.get(tableName)!.headers
+      headers = columns.map((name) => origHeaders.find((h) => h.name == name)!)
+    } else {
+      headers = this.tables.get(tableName)!.headers
+    }
     const rows = index.filter((row) => {
       if (filter) {
-        return filter(row)
+        return filter(row, headers)
       } else {
         return true
       }
@@ -187,10 +196,10 @@ export class Dataset {
 
   selectAsTable(
     tableName: string,
-    filter?: (x: any) => boolean,
+    filter?: FilterFunc,
     columns?: string[],
   ): ITable {
-    const rows = this.select(tableName, filter)
+    const rows = this.select(tableName, filter, columns)
     let headers: HeaderData[]
     if (columns) {
       const origHeaders = this.tables.get(tableName)!.headers

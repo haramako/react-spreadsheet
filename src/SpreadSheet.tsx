@@ -153,7 +153,7 @@ function makeRowHead({
   style,
   data,
 }: ListChildComponentProps<SpreadSheetState>) {
-  const name = data.data.colNum > 2 ? data.data.get(index, 2).value : ''
+  const name = data.data.colNum > 0 ? data.data.get(index, 0).value : ''
   return <RowHeadCell value={index} style={style} name={name} />
 }
 
@@ -385,6 +385,9 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
               width={totalWidth}
               onScroll={onScroll}
               innerRef={innerRef}
+              overscanColumnCount={10}
+              overscanRowCount={10}
+              style={{ overflow: 'scroll' }}
             >
               {MakeCell}
             </VariableSizeGrid>
