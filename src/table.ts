@@ -53,15 +53,43 @@ export class HeaderData {
   type: CellType
   validatorType: string
   unique: boolean
-  constructor(name: string, type: CellType) {
-    this.name = name
-    this.type = type
-    this.validatorType = type
-    if (type === 'number') {
-      this.validatorType = 'int'
+  isData: boolean = true
+  constructor(template: HeaderTemplate)
+  constructor(name: string, type: CellType)
+  constructor(...args: any) {
+    if (args.length == 1) {
+      const t: HeaderTemplate = args[0]
+      this.name = t.name
+      this.type = t.type ?? 'string'
+      this.validatorType = t.validatorType ?? 'string'
+      this.unique = t.unique ?? false
+    } else {
+      const name: string = args[0]
+      const type: CellType = args[1]
+      this.name = name
+      this.type = type
+      this.validatorType = type
+      if (type === 'number') {
+        this.validatorType = 'int'
+      }
+      this.unique = false
     }
-    this.unique = false
   }
+
+  static from(src: HeaderData | HeaderTemplate) {
+    if (src.hasOwnProperty('isData')) {
+      return src as HeaderData
+    } else {
+      return new HeaderData(src)
+    }
+  }
+}
+
+export type HeaderTemplate = {
+  name: string
+  type?: CellType
+  validatorType?: string
+  unique?: boolean
 }
 
 //=================================================
