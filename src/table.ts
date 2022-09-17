@@ -57,7 +57,7 @@ export class HeaderData {
   constructor(template: HeaderTemplate)
   constructor(name: string, type: CellType)
   constructor(...args: any) {
-    if (args.length == 1) {
+    if (args.length === 1) {
       const t: HeaderTemplate = args[0]
       this.name = t.name
       this.type = t.type ?? 'string'

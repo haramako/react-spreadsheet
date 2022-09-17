@@ -1,11 +1,9 @@
 import React, {
-  MouseEventHandler,
   useCallback,
   useEffect,
   useMemo,
   useReducer,
   useRef,
-  useState,
 } from 'react'
 import ReactDOM from 'react-dom/client'
 import './index.css'
@@ -61,12 +59,16 @@ export function reduceApp(state: AppState, action: any): AppState {
       return { ...state, viewLink, view }
     }
     case 'load_table': {
+      console.log(action)
       const tableName: string = action.tableName
       const data: any[] = action.data
       for (let row of data) {
         row._type = tableName
       }
+      console.log(data)
       state.dataset.batchInsert(data)
+      //console.log('size', state.dataset.rows.size)
+      console.log('indices', state.dataset.indices.get('character')!.length)
       return { ...state }
     }
     case 'filter.set': {
@@ -138,12 +140,15 @@ const App: React.FC = () => {
     }
   }, [dispatch, loaded])
 
-  const onViewClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
-    const viewLink = state.viewLinks.find(
-      (v) => v.name == (e.target as HTMLElement).dataset.name!,
-    )!
-    dispatch({ type: 'set_view', viewLink })
-  }, [])
+  const onViewClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      const viewLink = state.viewLinks.find(
+        (v) => v.name === (e.target as HTMLElement).dataset.name!,
+      )!
+      dispatch({ type: 'set_view', viewLink })
+    },
+    [state.viewLinks],
+  )
 
   if (!loaded.current) {
     return <div>Loading...</div>
@@ -154,10 +159,10 @@ const App: React.FC = () => {
       <div>
         {state.viewLinks.map((v) => {
           return (
-            <span>
-              <a key={v.name} href="#" onClick={onViewClick} data-name={v.name}>
+            <span key={v.name}>
+              <button onClick={onViewClick} data-name={v.name}>
                 {v.name}
-              </a>
+              </button>
               |
             </span>
           )
@@ -172,11 +177,14 @@ const App: React.FC = () => {
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
+/*
 root.render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
 )
+*/
+root.render(<App />)
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

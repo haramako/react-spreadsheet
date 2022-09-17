@@ -1,10 +1,5 @@
-import { CellType, ICell, ITable } from './model'
+import { ICell, ITable } from './model'
 import { HeaderData, HeaderTemplate } from './table'
-
-const keyCache: any = {}
-function makeKey(a: string, b: string) {
-  return a + '.' + b
-}
 
 //=================================================
 // DataCell
@@ -116,8 +111,6 @@ export class Dataset {
   tables: Map<string, TableInfo> = new Map()
   indices: Map<string, Row[]> = new Map()
 
-  constructor() {}
-
   createTable(name: string, headers: (HeaderTemplate | HeaderData)[]) {
     this.indices.set(name, [])
     this.tables.set(name, {
@@ -140,7 +133,7 @@ export class Dataset {
     if (!index) {
       throw new Error(`Table ${tableName} not found`)
     }
-    if (index.length == 0) {
+    if (index.length === 0) {
       return 0
     } else {
       return index.map((r) => r._order).reduce((n, m) => Math.max(n, m))
@@ -164,7 +157,7 @@ export class Dataset {
       row._order = this.#newOrder(row._type) + 1
     }
     this.rows.set(row._guid, row)
-    this.indices.get(row._type)?.push(row)
+    this.indices.get(row._type)!.push(row)
   }
 
   #getIndex(name: string) {
@@ -180,7 +173,7 @@ export class Dataset {
     let headers: HeaderData[]
     if (columns) {
       const origHeaders = this.tables.get(tableName)!.headers
-      headers = columns.map((name) => origHeaders.find((h) => h.name == name)!)
+      headers = columns.map((name) => origHeaders.find((h) => h.name === name)!)
     } else {
       headers = this.tables.get(tableName)!.headers
     }
@@ -203,7 +196,7 @@ export class Dataset {
     let headers: HeaderData[]
     if (columns) {
       const origHeaders = this.tables.get(tableName)!.headers
-      headers = columns.map((name) => origHeaders.find((h) => h.name == name)!)
+      headers = columns.map((name) => origHeaders.find((h) => h.name === name)!)
     } else {
       headers = this.tables.get(tableName)!.headers
     }
