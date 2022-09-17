@@ -59,16 +59,12 @@ export function reduceApp(state: AppState, action: any): AppState {
       return { ...state, viewLink, view }
     }
     case 'load_table': {
-      console.log(action)
       const tableName: string = action.tableName
       const data: any[] = action.data
       for (let row of data) {
         row._type = tableName
       }
-      console.log(data)
       state.dataset.batchInsert(data)
-      //console.log('size', state.dataset.rows.size)
-      console.log('indices', state.dataset.indices.get('character')!.length)
       return { ...state }
     }
     case 'filter.set': {
