@@ -1,5 +1,6 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback } from 'react'
 import { Position } from './model'
+import { useTableDispatcher } from './SpreadSheet'
 
 //=================================================
 // Visualizer
@@ -9,7 +10,6 @@ export type Visualizer = React.FC<VisualizerProps>
 type VisualizerProps = {
   location: Position
   value: any
-  dispatch: React.Dispatch<any>
 }
 
 export const StringVisualizer: React.FC<VisualizerProps> = ({ value }) => {
@@ -23,11 +23,11 @@ export const NumberVisualizer: React.FC<VisualizerProps> = ({ value }) => {
 export const BooleanVisualizer: React.FC<VisualizerProps> = ({
   location,
   value,
-  dispatch,
 }) => {
+  const dispatch = useTableDispatcher()
   const onChange = useCallback(() => {
     dispatch({ type: 'cell.change_value', location, newValue: !value })
-  }, [value, dispatch])
+  }, [value, dispatch, location])
   return <input type="checkbox" checked={!!value} onChange={onChange} />
 }
 

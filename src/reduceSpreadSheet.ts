@@ -93,7 +93,7 @@ export function reduceSpreadSheet(
       } else {
         cell.value = newValue
       }
-      return state
+      return { ...state }
     }
     case 'editor.end':
       {

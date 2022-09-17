@@ -9,19 +9,7 @@ import React, {
   ReactPortal,
 } from 'react'
 import './spreadsheet.css'
-import {
-  Position,
-  Selection,
-  ITable,
-  IHeader,
-  ValueValidatorCollection,
-} from './model'
-import {
-  BooleanValidator,
-  IntegerValidator,
-  NumberValidator,
-  StringValidator,
-} from './validators'
+import { Position, Selection, ITable, IHeader } from './model'
 import {
   VariableSizeGrid,
   VariableSizeList,
@@ -170,6 +158,54 @@ function makeRowHead({
   return <RowHeadCell value={index} style={style} />
 }
 
+function findAncestor(e: HTMLElement, sel: string) {
+  for (let el: HTMLElement | null = e; el; el = el.parentElement) {
+    if (el.matches(sel)) {
+      return el
+    }
+  }
+  return null
+}
+
+/**
+ * Synchronize scroll data grid with column header and row header.
+ * @returns
+ */
+function useScrollSynchronization() {
+  const [scrollPos, setScrollPos] = useState([0, 0])
+
+  const onScroll = useCallback((props: GridOnScrollProps) => {
+    setScrollPos([props.scrollLeft, props.scrollTop])
+  }, [])
+
+  const colHeadRef = useRef<VariableSizeList>(null)
+  const rowHeadRef = useRef<VariableSizeList>(null)
+
+  useLayoutEffect(() => {
+    colHeadRef.current?.scrollTo(scrollPos[0])
+    rowHeadRef.current?.scrollTo(scrollPos[1])
+  }, [scrollPos])
+
+  return { onScroll, colHeadRef, rowHeadRef }
+}
+
+function idToPosition(id: string) {
+  const found = id.match(/^cell-([0-9]+)-([0-9]+)$/)
+  if (found) {
+    return Position.from(parseInt(found[1]), parseInt(found[2]))
+  } else {
+    return null
+  }
+}
+
+function getCellPosition(target: EventTarget | Element | null) {
+  if (!target) {
+    return null
+  }
+  const cell = findAncestor(target as HTMLElement, '.spx__cell')
+  return cell && idToPosition(cell.id)
+}
+
 export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   const ref = useRef<HTMLDivElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
@@ -202,19 +238,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
     [state, dispatch],
   )
 
-  const [scrollPos, setScrollPos] = useState([0, 0])
-
-  const onScroll = useCallback((props: GridOnScrollProps) => {
-    setScrollPos([props.scrollLeft, props.scrollTop])
-  }, [])
-
-  const colHeadRef = useRef<VariableSizeList>(null)
-  const rowHeadRef = useRef<VariableSizeList>(null)
-
-  useLayoutEffect(() => {
-    colHeadRef.current?.scrollTo(scrollPos[0])
-    rowHeadRef.current?.scrollTo(scrollPos[1])
-  }, [scrollPos])
+  const { onScroll, colHeadRef, rowHeadRef } = useScrollSynchronization()
 
   const columnWidth = useCallback((i: number) => {
     return i % 2 === 0 ? 80 : 100
@@ -250,29 +274,66 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
     )
   }
 
-  function findAncestor(e: HTMLElement, sel: string) {
-    for (let el: HTMLElement | null = e; el; el = el.parentElement) {
-      if (el.matches(sel)) {
-        return el
-      }
-    }
-    return null
-  }
+  const [mouseDragging, setMouseDragging] = useState(false)
 
-  const onClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const t2 = findAncestor(e.target as HTMLElement, '.spx__cell')
-    console.log(
-      t2?.getAttribute('id'),
-      e.bubbles,
-      e.defaultPrevented,
-      e.eventPhase,
-    )
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button === 0) {
+        const location = getCellPosition(e.target)
+        if (location) {
+          ;(e.target as Element).setPointerCapture(e.pointerId)
+          dispatch({ type: 'cursor.set', location, shiftKey: e.shiftKey })
+        }
+        setMouseDragging(true)
+      }
+    },
+    [dispatch],
+  )
+
+  const onPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (mouseDragging) {
+        const target = document.elementFromPoint(e.clientX, e.clientY)
+        const location = getCellPosition(target)
+        if (location) {
+          dispatch({ type: 'cursor.set', location, shiftKey: true })
+        }
+      }
+    },
+    [mouseDragging, dispatch],
+  )
+
+  const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    setMouseDragging(false)
+    ;(e.target as Element).releasePointerCapture(e.pointerId)
   }, [])
+
+  const onDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const target = document.elementFromPoint(e.clientX, e.clientY)
+      const location = getCellPosition(target)
+      if (location) {
+        dispatch({ type: 'cell.doubleclick', location })
+      }
+    },
+    [dispatch],
+  )
 
   return (
     <TableContext.Provider value={table}>
       <TableDispatcherContext.Provider value={dispatch}>
-        <div tabIndex={1} className="spx" {...{ ref, onKeyDown, onClick }}>
+        <div
+          tabIndex={1}
+          className="spx"
+          {...{
+            ref,
+            onKeyDown,
+            onDoubleClick,
+            onPointerDown,
+            onPointerMove,
+            onPointerUp,
+          }}
+        >
           <div style={{ display: 'flex' }}>
             <div style={{ width: 30 }}>&nbsp;</div>
             <VariableSizeList

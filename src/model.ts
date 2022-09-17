@@ -133,8 +133,6 @@ export interface IValueValidator {
 export class ValueValidatorCollection {
   validators: IValueValidator[] = []
 
-  constructor() {}
-
   add(validator: IValueValidator) {
     this.validators.push(validator)
   }
