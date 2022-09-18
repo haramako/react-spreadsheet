@@ -36,7 +36,7 @@ function filterFunc(filter: string) {
   }
 }
 
-export function reduceApp(state: AppState, action: any): AppState {
+function reduceApp(state: AppState, action: any): AppState {
   console.log('reduceApp', action)
   switch (action.type) {
     case 'set_view': {
