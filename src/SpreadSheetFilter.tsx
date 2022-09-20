@@ -1,23 +1,22 @@
-import React, { useCallback } from 'react'
+import React from 'react'
 
 type SpreadSheetFilterProps = {
   value: string
-  dispatch: React.Dispatch<any>
+  onChange: (newValue: string) => void
 }
 
 const SpreadSheetFilter: React.FC<SpreadSheetFilterProps> = ({
   value,
-  dispatch,
+  onChange,
 }) => {
-  const onChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      dispatch({ type: 'filter.set', value: e.target.value })
-    },
-    [dispatch],
-  )
   return (
     <div>
-      Filter: <input type="text" {...{ value, onChange }} />
+      Filter:{' '}
+      <input
+        type="text"
+        onChange={(e) => onChange(e.target.value)}
+        {...{ value }}
+      />
     </div>
   )
 }
