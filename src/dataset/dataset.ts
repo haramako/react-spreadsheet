@@ -1,5 +1,4 @@
-import { ICell, ITable } from './model'
-import { HeaderData, HeaderTemplate } from './table'
+import { ICell, ITable, HeaderData, HeaderTemplate } from '../spreadsheet'
 
 //=================================================
 // DataCell

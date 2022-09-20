@@ -1,5 +1,5 @@
 import { Dataset } from './dataset'
-import { ITable } from './model'
+import { ITable } from '../spreadsheet'
 
 function tableToData(table: ITable): any[][] {
   const r: any[][] = []

@@ -5,11 +5,9 @@ import React, {
   useReducer,
   useRef,
 } from 'react'
-import { SpreadSheet } from './SpreadSheet'
+import { SpreadSheet, ITable, HeaderData } from './spreadsheet'
 import SpreadSheetFilter from './SpreadSheetFilter'
-import { ITable } from './model'
 import { Dataset } from './dataset'
-import { HeaderData } from './table'
 
 type ViewLink = { name: string; func: (data: any) => ITable }
 
@@ -27,7 +25,9 @@ function filterFunc(filter: string) {
       return true
     } else {
       for (let h of headers) {
-        if (row[h.name].toString().includes(filter)) {
+        if (!row[h.name]) {
+          return false
+        } else if (row[h.name].toString().includes(filter)) {
           return true
         }
       }

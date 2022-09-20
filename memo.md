@@ -1,18 +1,22 @@
-* テーブルの読み込み/保存
-* 選択したセルにスクロールするようにする
+- データセットの読み込み
+* データセットの保存保存
+* 選択したセルにスクロールするようにする（キーボードで移動時）
 * 編集中にマウス等でセルを移動した際に、編集中の値を反映するようにする
 * コマンド/Undo/Redo化をする(reducer?)
-* DataSetに型を持たせる
 * コピー&ペースト
 * RowHead, ColHeadでまとめて選択
 * 一番右と一番下のセルの座標が取得できないのを修正
+* MUIを導入
+* React Routerを導入
+* Reqct Queryを導入
 
+- DataSetに型を持たせる
 - マウスのドラッグで選択
 - DataSetをModelとViewModelに分ける
 - 表示してるセルだけrenderする
 
 * DataSetの型
-  * JSON準拠 => number(int, float), string, bool, null
+  * JSON準拠 => number(int, float), string, boolean, null
   * JSON準拠(合成) => array, object
   * SYAKUSON => array, objectと同等
   * ID(外部キー)
@@ -21,7 +25,7 @@
   * すべては文字列に変換可能？（フォールバック）
 
 * キーボード
-  - 上下左右 => 選択 
+  - 上下左右 => 選択
     * (+Shift) =>範囲選択
     * (+Ctrl)=>一気に移動
     * (+Shift+Ctrl)=> 一気に選択
@@ -34,6 +38,10 @@
     * (+Shift) => 左へ移動
   * DEL => セルの削除
   * Backspace => セルの削除＋セルの編集開始
+  * Ctrl+C
+  * Ctrl+V
+  * Ctrl+X
+  * Ctrl+S (ページを閉じるときに自動で保存?)
 * マウス
   * ?+Shift => 範囲選択（選択開始地点から)
   * ?+Ctrl => 選択範囲の追加
