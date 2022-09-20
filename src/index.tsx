@@ -1,45 +1,19 @@
+import React from 'react'
 import ReactDOM from 'react-dom/client'
-import './index.css'
 import reportWebVitals from './reportWebVitals'
-import { App, appLoader } from './App'
-import { TablePage, tablePageLoader } from './TablePage'
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-import {
-  RecoilRoot,
-  atom,
-  selector,
-  useRecoilState,
-  useRecoilValue,
-} from 'recoil'
-import { Dataset } from './dataset'
+import { RouterProvider } from 'react-router-dom'
+import { RecoilRoot } from 'recoil'
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <App />,
-    loader: appLoader,
-    children: [
-      {
-        path: '/view/:view',
-        element: <TablePage />,
-        loader: tablePageLoader,
-      },
-    ],
-  },
-])
+import './index.css'
+import router from './router'
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
-/*
 root.render(
   <React.StrictMode>
-    <App />
+    <RecoilRoot>
+      <RouterProvider router={router} />
+    </RecoilRoot>
   </React.StrictMode>,
-)
-*/
-root.render(
-  <RecoilRoot>
-    <RouterProvider router={router} />
-  </RecoilRoot>,
 )
 
 // If you want to start measuring performance in your app, pass a function
