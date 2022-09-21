@@ -6,7 +6,7 @@ type ViewLink = { name: string }
 
 type DataFile = {
   [tableName: string]: {
-    columns: { key: string; type: CellType }[]
+    columns: { key: string; name?: string; type: CellType }[]
     items: any[]
   }
 }
@@ -21,7 +21,11 @@ async function createDataset() {
         let { columns, items } = data[tableName]
         ds.createTable(
           tableName,
-          columns.map((c) => ({ name: c.key, type: c.type })),
+          columns.map((c) => ({
+            key: c.key,
+            name: c.name ?? c.key,
+            type: c.type,
+          })),
         )
 
         for (let row of items) {

@@ -1,4 +1,4 @@
-import { CellType, ICell, ITable } from './model'
+import { CellType, ICell, IHeader, IRow, ITable } from './model'
 import { iota } from './util'
 
 //=================================================
@@ -48,25 +48,28 @@ export class CellData implements ICell {
 //=================================================
 // HeaderData
 //=================================================
-export class HeaderData {
+export class HeaderData implements IHeader {
+  key: string
   name: string
   type: CellType
   validatorType: string
   unique: boolean
   isData: boolean = true
   constructor(template: HeaderTemplate)
-  constructor(name: string, type: CellType)
+  constructor(key: string, type: CellType)
   constructor(...args: any) {
     if (args.length === 1) {
       const t: HeaderTemplate = args[0]
-      this.name = t.name
+      this.key = t.key
+      this.name = t.name ?? t.key
       this.type = t.type ?? 'string'
       this.validatorType = t.validatorType ?? 'string'
       this.unique = t.unique ?? false
     } else {
-      const name: string = args[0]
+      const key: string = args[0]
       const type: CellType = args[1]
-      this.name = name
+      this.key = key
+      this.name = key
       this.type = type
       this.validatorType = type
       if (type === 'number') {
@@ -86,7 +89,8 @@ export class HeaderData {
 }
 
 export type HeaderTemplate = {
-  name: string
+  key: string
+  name?: string
   type?: CellType
   validatorType?: string
   unique?: boolean
@@ -118,6 +122,10 @@ export class Table implements ITable {
 
   getHeader(col: number) {
     return this.headers[col]
+  }
+
+  getRow(row: number): IRow {
+    return { guid: 0 } // TODO
   }
 
   get(row: number, col: number) {
@@ -203,6 +211,10 @@ export class JSONTable implements ITable {
 
   getHeader(col: number) {
     return this.headers[col]
+  }
+
+  getRow(row: number): IRow {
+    return { guid: 0 } // TODO
   }
 
   get(row: number, col: number) {

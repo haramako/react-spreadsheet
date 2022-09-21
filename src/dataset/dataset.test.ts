@@ -16,7 +16,7 @@ function tableToData(table: ITable): any[][] {
 describe('Dataset.constructor', () => {
   const ds = new Dataset()
 
-  ds.createTable('character', [{ name: 'name' }, { name: 'age' }])
+  ds.createTable('character', [{ key: 'name', name: 'NAME' }, { key: 'age' }])
 
   expect(ds.tables.get('character')!.name).toEqual('character')
   expect(ds.tables.get('character')!.headers.length).toEqual(2)
@@ -32,7 +32,7 @@ describe('DataSet', () => {
 
   beforeEach(() => {
     ds = new Dataset()
-    ds.createTable('character', [{ name: 'name' }, { name: 'age' }])
+    ds.createTable('character', [{ key: 'name', name: 'NAME' }, { key: 'age' }])
     ds.insert({
       _guid: 1,
       _type: 'character',

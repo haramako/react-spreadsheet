@@ -58,9 +58,9 @@ const SelectionRect: React.FC<SelectionRectProps> = ({ selection }) => {
 
       if (
         r.left !== undefined &&
-        r.top != undefined &&
-        r.right != undefined &&
-        r.bottom != undefined
+        r.top !== undefined &&
+        r.right !== undefined &&
+        r.bottom !== undefined
       ) {
         if (!shallowEquals(rect, r)) {
           setRect(r)

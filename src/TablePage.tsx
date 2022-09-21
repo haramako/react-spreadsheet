@@ -11,9 +11,9 @@ function filterFunc(filter: string) {
       return true
     } else {
       for (let h of headers) {
-        if (!row[h.name]) {
+        if (!row[h.key]) {
           return false
-        } else if (row[h.name].toString().includes(filter)) {
+        } else if (row[h.key].toString().includes(filter)) {
           return true
         }
       }

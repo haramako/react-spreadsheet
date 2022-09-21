@@ -6,6 +6,8 @@ import {
 import { LinkProps } from '@mui/material/Link'
 import { createTheme } from '@mui/material'
 
+// See: https://mui.com/material-ui/guides/routing/
+
 const LinkBehavior = React.forwardRef<
   HTMLAnchorElement,
   Omit<RouterLinkProps, 'to'> & { href: RouterLinkProps['to'] }
@@ -15,7 +17,7 @@ const LinkBehavior = React.forwardRef<
   return <RouterLink ref={ref} to={href} {...other} />
 })
 
-const theme = createTheme({
+export const theme = createTheme({
   components: {
     MuiLink: {
       defaultProps: {

@@ -103,9 +103,14 @@ export class Selection {
 export type CellType = 'number' | 'string' | 'boolean' | 'object'
 
 export interface IHeader {
+  key: string
   name: string
   type: CellType
   validatorType: string
+}
+
+export interface IRow {
+  guid: number
 }
 
 export interface ICell {
@@ -118,6 +123,7 @@ export interface ITable {
   get colNum(): number
   get rowNum(): number
   getHeader(col: number): IHeader
+  getRow(row: number): IRow
   get(row: number, col: number): ICell
 }
 

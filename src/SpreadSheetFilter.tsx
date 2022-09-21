@@ -1,3 +1,4 @@
+import { Input } from '@mui/material'
 import React from 'react'
 
 type SpreadSheetFilterProps = {
@@ -11,12 +12,15 @@ const SpreadSheetFilter: React.FC<SpreadSheetFilterProps> = ({
 }) => {
   return (
     <div>
-      Filter:{' '}
-      <input
-        type="text"
+      <Input
+        id="outlined-basic"
+        placeholder="Filter"
+        size="small"
         onChange={(e) => onChange(e.target.value)}
         {...{ value }}
       />
+      <br />
+      &nbsp;
     </div>
   )
 }

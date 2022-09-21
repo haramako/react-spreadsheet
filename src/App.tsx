@@ -1,9 +1,9 @@
-import React, { Suspense } from 'react'
+import React, { Suspense, useState } from 'react'
 import { Outlet } from 'react-router'
 import { Link } from 'react-router-dom'
 import { useRecoilValue } from 'recoil'
 import { viewLinksState } from './state'
-import Button from '@mui/material/Button'
+import { ListItemButton, ListItemText, List } from '@mui/material'
 
 export async function appLoader({ params }: any) {
   return null
@@ -11,25 +11,26 @@ export async function appLoader({ params }: any) {
 
 export const App: React.FC = () => {
   const viewLinks = useRecoilValue(viewLinksState)
+  const [selected, setSelected] = useState(0)
 
   return (
     <>
       <div style={{ display: 'flex', width: '100%' }}>
-        <div>
-          {viewLinks.map((v) => {
+        <List style={{ width: '200px' }} dense>
+          {viewLinks.map((v, i) => {
             return (
-              <div key={v.name}>
-                <Button
-                  component={Link}
-                  variant="contained"
-                  to={'/view/' + v.name}
-                >
-                  {v.name}
-                </Button>
-              </div>
+              <ListItemButton
+                key={v.name}
+                component={Link}
+                to={'/view/' + v.name}
+                selected={selected === i}
+                onClick={() => setSelected(i)}
+              >
+                <ListItemText primary={v.name} />
+              </ListItemButton>
             )
           })}
-        </div>
+        </List>
         <Suspense fallback={<div>Loading...</div>}>
           <div style={{ width: '800px' }}>
             <Outlet />

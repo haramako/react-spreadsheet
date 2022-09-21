@@ -63,6 +63,8 @@ export class DataCell implements ICell {
   }
 }
 
+type RowData = { guid: number }
+
 //=================================================
 // DataTable
 //=================================================
@@ -71,21 +73,27 @@ export class DataTable implements ITable {
   rowNum: number
   data: DataCell[][]
   headers: HeaderData[]
+  rows: RowData[]
 
   constructor(data: any[], headers: HeaderData[]) {
     this.data = []
     this.headers = headers
+    this.rows = data.map((row) => ({ guid: row._guid }))
 
     this.colNum = this.headers.length
     this.rowNum = data.length
 
     this.data = data.map((row) =>
-      this.headers.map((h) => new DataCell(row, h.name)),
+      this.headers.map((h) => new DataCell(row, h.key)),
     )
   }
 
   getHeader(col: number) {
     return this.headers[col]
+  }
+
+  getRow(row: number) {
+    return this.rows[row]
   }
 
   get(row: number, col: number) {
@@ -159,10 +167,10 @@ export class Dataset {
     this.indices.get(row._type)!.push(row)
   }
 
-  #getIndex(name: string) {
-    const index = this.indices.get(name)
+  #getIndex(indexName: string) {
+    const index = this.indices.get(indexName)
     if (!index) {
-      throw new Error(`Index ${name} not found`)
+      throw new Error(`Index ${indexName} not found`)
     }
     return index
   }
@@ -172,7 +180,7 @@ export class Dataset {
     let headers: HeaderData[]
     if (columns) {
       const origHeaders = this.tables.get(tableName)!.headers
-      headers = columns.map((name) => origHeaders.find((h) => h.name === name)!)
+      headers = columns.map((key) => origHeaders.find((h) => h.key === key)!)
     } else {
       headers = this.tables.get(tableName)!.headers
     }
@@ -195,7 +203,7 @@ export class Dataset {
     let headers: HeaderData[]
     if (columns) {
       const origHeaders = this.tables.get(tableName)!.headers
-      headers = columns.map((name) => origHeaders.find((h) => h.name === name)!)
+      headers = columns.map((key) => origHeaders.find((h) => h.key === key)!)
     } else {
       headers = this.tables.get(tableName)!.headers
     }

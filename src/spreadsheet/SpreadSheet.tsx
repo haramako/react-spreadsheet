@@ -9,7 +9,7 @@ import React, {
   ReactPortal,
 } from 'react'
 import './spreadsheet.css'
-import { Position, Selection, ITable, IHeader } from './model'
+import { Position, Selection, ITable, IHeader, IRow } from './model'
 import {
   VariableSizeGrid,
   VariableSizeList,
@@ -23,6 +23,7 @@ import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
 import { reduceSpreadSheet, SpreadSheetState } from './reduceSpreadSheet'
+import { Tooltip } from '@mui/material'
 
 //=================================================
 // HeadCell
@@ -36,9 +37,11 @@ type HeadCellProps = {
 export const HeadCell: React.FC<HeadCellProps> = React.memo(
   ({ value, style }) => {
     return (
-      <div className="spx__head-cell" style={style}>
-        {value.name}
-      </div>
+      <Tooltip title={value.key}>
+        <div className="spx__head-cell" style={style}>
+          {value.name}
+        </div>
+      </Tooltip>
     )
   },
 )
@@ -49,16 +52,19 @@ export const HeadCell: React.FC<HeadCellProps> = React.memo(
 
 type RowHeadCellProps = {
   value: number
+  row: IRow
   name: string
   style: any
 }
 
 export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
-  ({ value, name, style }) => {
+  ({ value, row, name, style }) => {
     return (
-      <div className="spx__row-head-cell" style={style}>
-        {value}:{name}
-      </div>
+      <Tooltip title={`GUID:${row.guid}`}>
+        <div className="spx__row-head-cell" style={style}>
+          {value}:{name}
+        </div>
+      </Tooltip>
     )
   },
 )
@@ -153,8 +159,10 @@ function makeRowHead({
   style,
   data,
 }: ListChildComponentProps<SpreadSheetState>) {
-  const name = data.data.colNum > 0 ? data.data.get(index, 0).value : ''
-  return <RowHeadCell value={index} style={style} name={name} />
+  const row = data.data.getRow(index)
+  const cell = data.data.get(index, 0)
+  const name = (cell && cell.value) ?? ''
+  return <RowHeadCell value={index} {...{ name, row, style, index }} />
 }
 
 function findAncestor(e: HTMLElement, sel: string) {
