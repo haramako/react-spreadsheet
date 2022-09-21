@@ -11,17 +11,13 @@ const SpreadSheetFilter: React.FC<SpreadSheetFilterProps> = ({
   onChange,
 }) => {
   return (
-    <div>
-      <Input
-        id="outlined-basic"
-        placeholder="Filter"
-        size="small"
-        onChange={(e) => onChange(e.target.value)}
-        {...{ value }}
-      />
-      <br />
-      &nbsp;
-    </div>
+    <Input
+      id="outlined-basic"
+      placeholder="Filter"
+      size="small"
+      onChange={(e) => onChange(e.target.value)}
+      {...{ value }}
+    />
   )
 }
 

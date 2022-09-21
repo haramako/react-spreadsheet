@@ -1,6 +1,6 @@
 import { CellType } from './spreadsheet'
 import { Dataset } from './dataset'
-import { selector } from 'recoil'
+import { atom, selector } from 'recoil'
 
 type ViewLink = { name: string }
 
@@ -37,6 +37,11 @@ async function createDataset() {
 
   return ds
 }
+
+export const datasetVersionState = atom({
+  key: 'datasetVersion',
+  default: 0,
+})
 
 export const datasetState = selector({
   key: 'dataset',
