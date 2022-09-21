@@ -14,7 +14,7 @@ type DataFile = {
 async function createDataset() {
   const ds = new Dataset()
 
-  await fetch('/data.json')
+  await fetch('/data2.json')
     .then((res) => res.json())
     .then((data: DataFile) => {
       for (let tableName in data) {
