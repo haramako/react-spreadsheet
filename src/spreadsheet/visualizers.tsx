@@ -33,6 +33,7 @@ export const BooleanVisualizer: React.FC<VisualizerProps> = ({
 
 export const Visualizers: { [name: string]: Visualizer } = {
   string: StringVisualizer,
+  object: StringVisualizer,
   number: NumberVisualizer,
   boolean: BooleanVisualizer,
 }

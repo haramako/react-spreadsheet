@@ -1,7 +1,13 @@
 import { tsv2json } from 'tsv-json'
-import { readdirSync, readFileSync, writeFileSync } from 'fs'
+import { writeFileSync } from 'fs'
 import { execFileSync } from 'child_process'
 import { chdir, cwd } from 'process'
+
+const ElementTypes = {
+  number: 'number',
+  bool: 'boolean',
+  string: 'string'
+}
 
 export function loadTsv(src) {
   const rows = tsv2json(src)
@@ -18,7 +24,8 @@ export function loadTsv(src) {
       types = row
       types[0] = types[0].split(' ', 2)[1]
       columns = keys.map((key, i) => {
-        var type = types[i]
+        let type = types[i]
+        type = ElementTypes[type] ?? 'object'
         return { key, type }
       })
     } else if (row[0].startsWith('$') || row[0].startsWith('#')) {
