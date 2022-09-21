@@ -6,45 +6,62 @@ type SelectionRectProps = {
   selection: Selection
 }
 
-function getCellRect(row: number, col: number): any | null {
+type StyleRect = {
+  top: number
+  left: number
+  right: number
+  bottom: number
+}
+
+function getCellRect(row: number, col: number): StyleRect | undefined {
   const id = `#cell-${row}-${col}`
   const cellElement = document.querySelector<HTMLDivElement>(id)
   if (cellElement) {
-    const { left, top } = cellElement.style
-    return { left, top }
+    const { left, top, width, height } = cellElement.style
+    const leftNumber = parseInt(left)
+    const topNumber = parseInt(top)
+    const right = leftNumber + parseInt(width)
+    const bottom = topNumber + parseInt(height)
+    return { left: leftNumber, top: topNumber, right, bottom }
   } else {
-    return null
+    return undefined
   }
 }
 
 const SelectionRect: React.FC<SelectionRectProps> = ({ selection }) => {
   const ref = useRef<HTMLDivElement | null>(null)
-  const [rect, setRect] = useState<any>({})
+  const [rect, setRect] = useState<StyleRect | null>(null)
 
   useEffect(() => {
     if (ref.current) {
       const topLeft = getCellRect(selection.top, selection.left)
-      const topRight = getCellRect(selection.top, selection.right)
-      const bottomLeft = getCellRect(selection.bottom, selection.left)
-      const bottomRight = getCellRect(selection.bottom, selection.right)
+      const topRight = getCellRect(selection.top, selection.right - 1)
+      const bottomLeft = getCellRect(selection.bottom - 1, selection.left)
+      const bottomRight = getCellRect(selection.bottom - 1, selection.right - 1)
       const r: any = { ...rect }
       if (topLeft) {
         r.left = topLeft.left
         r.top = topLeft.top
       }
       if (topRight) {
-        r.right = topRight.left
+        r.right = topRight.right
         r.top = topRight.top
       }
       if (bottomLeft) {
         r.left = bottomLeft.left
-        r.bottom = bottomLeft.top
+        r.bottom = bottomLeft.bottom
       }
       if (bottomRight) {
-        r.right = bottomRight.left
-        r.bottom = bottomRight.top
+        r.right = bottomRight.right
+        r.bottom = bottomRight.bottom
       }
-      if (r.left && r.top && r.right && r.bottom) {
+
+      if (
+        r.left !== undefined &&
+        r.top != undefined &&
+        r.right != undefined &&
+        r.bottom != undefined
+      ) {
         if (!shallowEquals(rect, r)) {
           setRect(r)
         }
@@ -52,11 +69,11 @@ const SelectionRect: React.FC<SelectionRectProps> = ({ selection }) => {
     }
   }, [selection.top, selection.left, selection.bottom, selection.right, rect])
 
-  const styleRect = {
-    left: rect.left,
-    top: rect.top,
-    width: parseInt(rect.right) - parseInt(rect.left) + 'px',
-    height: parseInt(rect.bottom) - parseInt(rect.top) + 'px',
+  const styleRect = rect && {
+    left: rect.left + 'px',
+    top: rect.top + 'px',
+    width: rect.right - rect.left + 'px',
+    height: rect.bottom - rect.top + 'px',
   }
 
   return (
