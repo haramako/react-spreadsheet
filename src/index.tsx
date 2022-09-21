@@ -4,6 +4,7 @@ import reportWebVitals from './reportWebVitals'
 import { RouterProvider } from 'react-router-dom'
 import { RecoilRoot } from 'recoil'
 
+import './mui_theme'
 import './index.css'
 import router from './router'
 

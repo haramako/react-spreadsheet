@@ -3,6 +3,7 @@ import { Outlet } from 'react-router'
 import { Link } from 'react-router-dom'
 import { useRecoilValue } from 'recoil'
 import { viewLinksState } from './state'
+import Button from '@mui/material/Button'
 
 export async function appLoader({ params }: any) {
   return null
@@ -15,15 +16,19 @@ export const App: React.FC = () => {
     <>
       <div style={{ display: 'flex', width: '100%' }}>
         <div>
-          <ul>
-            {viewLinks.map((v) => {
-              return (
-                <li key={v.name}>
-                  <Link to={'view/' + v.name}>{v.name}</Link>
-                </li>
-              )
-            })}
-          </ul>
+          {viewLinks.map((v) => {
+            return (
+              <div key={v.name}>
+                <Button
+                  component={Link}
+                  variant="contained"
+                  to={'/view/' + v.name}
+                >
+                  {v.name}
+                </Button>
+              </div>
+            )
+          })}
         </div>
         <Suspense fallback={<div>Loading...</div>}>
           <div style={{ width: '800px' }}>

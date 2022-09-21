@@ -82,9 +82,10 @@ const SelectionRect: React.FC<SelectionRectProps> = ({ selection }) => {
       ref={ref}
       style={{
         ...styleRect,
+        pointerEvents: 'none',
         zIndex: -1,
         position: 'absolute',
-        backgroundColor: '#aff',
+        backgroundColor: '#cff',
       }}
     ></div>
   )
