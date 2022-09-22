@@ -15,8 +15,14 @@ export const App: React.FC = () => {
 
   return (
     <>
-      <div style={{ display: 'flex', width: '100%' }}>
-        <List style={{ width: '200px' }} dense>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '200px 1fr 240px',
+          gridTemplateRows: '100vh',
+        }}
+      >
+        <List dense>
           {viewLinks.map((v, i) => {
             return (
               <ListItemButton
@@ -32,9 +38,8 @@ export const App: React.FC = () => {
           })}
         </List>
         <Suspense fallback={<div>Loading...</div>}>
-          <div style={{ width: '800px' }}>
-            <Outlet />
-          </div>
+          <Outlet />
+          <div>right panel</div>
         </Suspense>
       </div>
     </>

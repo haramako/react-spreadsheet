@@ -5,6 +5,7 @@ import { useLoaderData } from 'react-router'
 import { datasetState, datasetVersionState } from './state'
 import { useRecoilState, useRecoilValue } from 'recoil'
 import { Button, ButtonGroup } from '@mui/material'
+import AutoSizer from 'react-virtualized-auto-sizer'
 
 function filterFunc(filter: string) {
   return (row: any, headers: HeaderData[]): boolean => {
@@ -56,7 +57,7 @@ export const TablePage: React.FC = () => {
   }, [dataset, datasetVersion, setDatasetVersion])
 
   return (
-    <>
+    <div style={{ display: 'grid', gridTemplateRows: '40px 1fr' }}>
       <div>
         <SpreadSheetFilter value={filter} onChange={onChange} />
         <ButtonGroup size="small" variant="contained">
@@ -64,7 +65,13 @@ export const TablePage: React.FC = () => {
           <Button>削除</Button>
         </ButtonGroup>
       </div>
-      {<SpreadSheet table={view} />}
-    </>
+      <div>
+        <AutoSizer>
+          {({ height, width }) => {
+            return <SpreadSheet table={view} {...{ width, height }} />
+          }}
+        </AutoSizer>
+      </div>
+    </div>
   )
 }

@@ -112,6 +112,8 @@ function isNormalKey(key: string) {
 
 type SpreadSheetProps = {
   table: ITable
+  width?: number
+  height?: number
 }
 
 function MakeCell({
@@ -254,7 +256,13 @@ function usePointerEvents(dispatch: React.Dispatch<any>) {
   return { onPointerDown, onPointerMove, onPointerUp }
 }
 
-export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
+export const SpreadSheet: React.FC<SpreadSheetProps> = ({
+  table,
+  width,
+  height,
+}) => {
+  width ??= 800
+  height ??= 600
   const ref = useRef<HTMLDivElement>(null)
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
     data: table,
@@ -304,8 +312,6 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
   }, [])
 
   const scrollBarSize = 14
-  const totalWidth = 1800
-  const totalHeight = 600
 
   const innerRef = useRef<HTMLDivElement>(null)
 
@@ -344,6 +350,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
     <TableContext.Provider value={table}>
       <TableDispatcherContext.Provider value={dispatch}>
         <div
+          style={{ width, height }}
           tabIndex={1}
           className="spx"
           {...{
@@ -363,7 +370,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
               itemCount={state.data.colNum}
               itemSize={columnWidth}
               height={30}
-              width={totalWidth - scrollBarSize}
+              width={width - 240 - scrollBarSize}
               layout={'horizontal'}
               style={{ overflow: 'hidden' }}
             >
@@ -376,7 +383,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
               itemData={state}
               itemCount={state.data.rowNum}
               itemSize={columnHeight}
-              height={totalHeight - scrollBarSize}
+              height={height - 30 - scrollBarSize}
               width={240}
               layout={'vertical'}
               style={{ overflow: 'hidden' }}
@@ -389,8 +396,8 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table }) => {
               rowCount={state.data.rowNum}
               columnWidth={columnWidth}
               rowHeight={columnHeight}
-              height={totalHeight}
-              width={totalWidth}
+              height={height - 30}
+              width={width - 240}
               onScroll={onScroll}
               innerRef={innerRef}
               overscanColumnCount={10}
