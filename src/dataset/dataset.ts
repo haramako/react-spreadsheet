@@ -1,4 +1,5 @@
 import { ICell, ITable, HeaderData, HeaderTemplate } from '../spreadsheet'
+import stringHash from 'string-hash'
 
 //=================================================
 // DataCell
@@ -10,6 +11,10 @@ export class DataCell implements ICell {
   constructor(data: any, key: string) {
     this.#data = data
     this.#key = key
+  }
+
+  get guid() {
+    return this.#data._guid ^ stringHash(this.#key)
   }
 
   get value() {

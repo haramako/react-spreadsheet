@@ -1,11 +1,16 @@
 import { DataFile, Dataset, loadDataset } from './dataset'
 import { atom, selector } from 'recoil'
+import { recoilPersist } from 'recoil-persist'
+import { ICell } from './spreadsheet'
 
 type ViewLink = { name: string }
+
+const { persistAtom } = recoilPersist()
 
 export const dataPathState = atom({
   key: 'dataPath',
   default: 'data.json',
+  effects_UNSTABLE: [persistAtom],
 })
 
 async function createDataset(path: string) {
@@ -37,4 +42,9 @@ export const viewLinksState = selector<ViewLink[]>({
     const dataset = await get(datasetState)
     return [...dataset.tables.keys()].map((name) => ({ name }))
   },
+})
+
+export const selectedCellState = atom<ICell | undefined>({
+  key: 'selectedCell',
+  default: undefined,
 })

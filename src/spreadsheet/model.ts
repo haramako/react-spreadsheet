@@ -117,6 +117,7 @@ export interface ICell {
   value: string
   error: [string, string] | undefined
   get version(): number
+  get guid(): number
 }
 
 export interface ITable {

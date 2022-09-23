@@ -12,6 +12,7 @@ import {
   Input,
 } from '@mui/material'
 import { saveDataset } from './dataset'
+import { DataView } from './DataView'
 
 export async function appLoader({ params }: any) {
   return null
@@ -71,7 +72,7 @@ export const App: React.FC = () => {
         </div>
         <Suspense fallback={<div>Loading...</div>}>
           <Outlet />
-          <div>right panel</div>
+          <DataView />
         </Suspense>
       </div>
     </>

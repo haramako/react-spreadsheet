@@ -1,8 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { SpreadSheet, HeaderData, ICell } from './spreadsheet'
+import { SpreadSheet, HeaderData } from './spreadsheet'
 import SpreadSheetFilter from './SpreadSheetFilter'
 import { useLoaderData } from 'react-router'
-import { datasetState, datasetVersionState } from './state'
+import { datasetState, datasetVersionState, selectedCellState } from './state'
 import { useRecoilState, useRecoilValue } from 'recoil'
 import { Button, ButtonGroup } from '@mui/material'
 import AutoSizer from 'react-virtualized-auto-sizer'
@@ -35,6 +35,8 @@ type Params = {
 export const TablePage: React.FC = () => {
   const params = useLoaderData() as Params
   const dataset = useRecoilValue(datasetState)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [selectedCell, setSelectedCell] = useRecoilState(selectedCellState)
   const [datasetVersion, setDatasetVersion] =
     useRecoilState(datasetVersionState)
   const [filter, setFilter] = useState('')
@@ -56,10 +58,6 @@ export const TablePage: React.FC = () => {
     setDatasetVersion(datasetVersion + 1)
   }, [dataset, datasetVersion, setDatasetVersion])
 
-  const onChangeCell = useCallback((cell?: ICell) => {
-    console.log(cell)
-  }, [])
-
   return (
     <div style={{ display: 'grid', gridTemplateRows: '40px 1fr' }}>
       <div>
@@ -73,7 +71,10 @@ export const TablePage: React.FC = () => {
         <AutoSizer>
           {({ height, width }) => {
             return (
-              <SpreadSheet table={view} {...{ width, height, onChangeCell }} />
+              <SpreadSheet
+                table={view}
+                {...{ width, height, onChangeCell: setSelectedCell }}
+              />
             )
           }}
         </AutoSizer>
