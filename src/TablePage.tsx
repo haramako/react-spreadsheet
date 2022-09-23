@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react'
-import { SpreadSheet, HeaderData } from './spreadsheet'
+import { SpreadSheet, HeaderData, ICell } from './spreadsheet'
 import SpreadSheetFilter from './SpreadSheetFilter'
 import { useLoaderData } from 'react-router'
 import { datasetState, datasetVersionState } from './state'
@@ -56,6 +56,10 @@ export const TablePage: React.FC = () => {
     setDatasetVersion(datasetVersion + 1)
   }, [dataset, datasetVersion, setDatasetVersion])
 
+  const onChangeCell = useCallback((cell?: ICell) => {
+    console.log(cell)
+  }, [])
+
   return (
     <div style={{ display: 'grid', gridTemplateRows: '40px 1fr' }}>
       <div>
@@ -68,7 +72,9 @@ export const TablePage: React.FC = () => {
       <div>
         <AutoSizer>
           {({ height, width }) => {
-            return <SpreadSheet table={view} {...{ width, height }} />
+            return (
+              <SpreadSheet table={view} {...{ width, height, onChangeCell }} />
+            )
           }}
         </AutoSizer>
       </div>

@@ -9,7 +9,7 @@ import React, {
   ReactPortal,
 } from 'react'
 import './spreadsheet.css'
-import { Position, Selection, ITable, IHeader, IRow } from './model'
+import { Position, Selection, ITable, IHeader, IRow, ICell } from './model'
 import {
   VariableSizeGrid,
   VariableSizeList,
@@ -108,12 +108,6 @@ function isNormalKey(key: string) {
   return (
     key.length === 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
   )
-}
-
-type SpreadSheetProps = {
-  table: ITable
-  width?: number
-  height?: number
 }
 
 function MakeCell({
@@ -256,10 +250,18 @@ function usePointerEvents(dispatch: React.Dispatch<any>) {
   return { onPointerDown, onPointerMove, onPointerUp }
 }
 
+type SpreadSheetProps = {
+  table: ITable
+  width?: number
+  height?: number
+  onChangeCell?: (cell?: ICell) => void
+}
+
 export const SpreadSheet: React.FC<SpreadSheetProps> = ({
   table,
   width,
   height,
+  onChangeCell,
 }) => {
   width ??= 800
   height ??= 600
@@ -269,9 +271,14 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
     selection: new Selection(0, 0, 0, 0),
     tableRef: ref,
     filter: '',
+    onChangeCell: undefined,
   })
   if (table !== state.data) {
     dispatch({ type: 'set_table', table: table })
+  }
+
+  if (onChangeCell !== state.onChangeCell) {
+    dispatch({ type: 'set_onChangeCell', onChangeCell })
   }
 
   const onKeyDown = useCallback(

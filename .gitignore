@@ -24,4 +24,5 @@ yarn-error.log*
 
 /public/data.json
 /public/data2.json
+/var
 

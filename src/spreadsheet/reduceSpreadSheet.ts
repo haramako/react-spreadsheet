@@ -1,4 +1,10 @@
-import { ITable, Position, Selection, ValueValidatorCollection } from './model'
+import {
+  ICell,
+  ITable,
+  Position,
+  Selection,
+  ValueValidatorCollection,
+} from './model'
 import * as _validators from './validators'
 
 const validators = new ValueValidatorCollection()
@@ -16,6 +22,7 @@ export type SpreadSheetState = {
   tableRef: React.RefObject<HTMLDivElement>
   dispatch?: (action: any) => void
   filter: string
+  onChangeCell?: (cell?: ICell) => void
 }
 
 export function reduceSpreadSheet(
@@ -33,21 +40,10 @@ export function reduceSpreadSheet(
         selected: undefined,
         selectStart: undefined,
       }
-    case 'cell.select':
-      break
-    case 'cell.click':
-      return {
-        ...state,
-        selectStart: action.location,
-        selected: action.location,
-        selection: new Selection(action.location),
-        editing: undefined,
-      }
+    case 'set_onChangeCell':
+      return { ...state, onChangeCell: action.onChangeCell }
     case 'cell.doubleclick':
-      return {
-        ...state,
-        editing: action.location,
-      }
+      return { ...state, editing: action.location }
     case 'cursor.start_edit':
       return { ...state, editing: state.selected }
     case 'cursor.set': {
@@ -59,6 +55,9 @@ export function reduceSpreadSheet(
         state.selection = new Selection(newLoc)
         selectStart = newLoc
       }
+      state.onChangeCell &&
+        selectStart &&
+        state.onChangeCell(state.data.get(selectStart.row, selectStart.col))
       return {
         ...state,
         editing: undefined,

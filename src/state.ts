@@ -1,41 +1,24 @@
-import { CellType } from './spreadsheet'
-import { Dataset } from './dataset'
+import { DataFile, Dataset, loadDataset } from './dataset'
 import { atom, selector } from 'recoil'
 
 type ViewLink = { name: string }
 
-type DataFile = {
-  [tableName: string]: {
-    columns: { key: string; name?: string; type: CellType }[]
-    items: any[]
-  }
-}
+export const dataPathState = atom({
+  key: 'dataPath',
+  default: 'data.json',
+})
 
-async function createDataset() {
-  const ds = new Dataset()
+async function createDataset(path: string) {
+  const dataset = new Dataset()
 
-  await fetch('/data.json')
+  await fetch(path)
     .then((res) => res.json())
-    .then((data: DataFile) => {
-      for (let tableName in data) {
-        let { columns, items } = data[tableName]
-        ds.createTable(
-          tableName,
-          columns.map((c) => ({
-            key: c.key,
-            name: c.name ?? c.key,
-            type: c.type,
-          })),
-        )
-
-        for (let row of items) {
-          row._type = tableName
-        }
-        ds.batchInsert(items)
-      }
+    .then((data) => {
+      loadDataset(dataset, data as DataFile)
     })
+    .catch((err) => console.log(err))
 
-  return ds
+  return dataset
 }
 
 export const datasetVersionState = atom({
@@ -45,7 +28,7 @@ export const datasetVersionState = atom({
 
 export const datasetState = selector({
   key: 'dataset',
-  get: async ({ get }) => createDataset(),
+  get: async ({ get }) => createDataset('/api/files/' + get(dataPathState)),
 })
 
 export const viewLinksState = selector<ViewLink[]>({
