@@ -1,5 +1,4 @@
-import { CellType, ICell, IHeader, IRow, ITable } from './model'
-import { iota } from './util'
+import { CellType, IHeader } from './model'
 
 //=================================================
 // HeaderData

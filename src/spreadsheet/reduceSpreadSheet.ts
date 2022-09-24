@@ -55,9 +55,11 @@ export function reduceSpreadSheet(
         state.selection = new Selection(newLoc)
         selectStart = newLoc
       }
+      /*
       state.onChangeCell &&
         selectStart &&
         state.onChangeCell(state.data.get(selectStart.row, selectStart.col))
+        */
       return {
         ...state,
         editing: undefined,

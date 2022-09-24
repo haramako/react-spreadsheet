@@ -111,6 +111,7 @@ export interface IHeader {
 
 export interface IRow {
   guid: number
+  data: any
 }
 
 export interface ICell {

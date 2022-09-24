@@ -7,6 +7,7 @@ import React, {
   createContext,
   useContext,
   ReactPortal,
+  useEffect,
 } from 'react'
 import './spreadsheet.css'
 import { Position, Selection, ITable, IHeader, IRow, ICell } from './model'
@@ -23,7 +24,9 @@ import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
 import { reduceSpreadSheet, SpreadSheetState } from './reduceSpreadSheet'
-import { Tooltip } from '@mui/material'
+import { stepButtonClasses, Tooltip } from '@mui/material'
+import { selectionState } from '../state'
+import { useRecoilState } from 'recoil'
 
 //=================================================
 // HeadCell
@@ -276,6 +279,21 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
   if (table !== state.data) {
     dispatch({ type: 'set_table', table: table })
   }
+
+  // Update selectionState
+  const [selection, setSelection] = useRecoilState(selectionState)
+  useEffect(() => {
+    if (
+      state.selection !== selection.selection ||
+      state.selected !== selection.cursor
+    ) {
+      setSelection({
+        ...selection,
+        selection: state.selection,
+        cursor: state.selected,
+      })
+    }
+  }, [state, selection, setSelection])
 
   if (onChangeCell !== state.onChangeCell) {
     dispatch({ type: 'set_onChangeCell', onChangeCell })

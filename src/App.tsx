@@ -2,7 +2,12 @@ import React, { Suspense, useState } from 'react'
 import { Outlet } from 'react-router'
 import { Link } from 'react-router-dom'
 import { useRecoilState, useRecoilValue } from 'recoil'
-import { dataPathState, datasetState, viewLinksState } from './state'
+import {
+  dataPathState,
+  datasetState,
+  selectedViewLinkState,
+  viewLinksState,
+} from './state'
 import {
   ListItemButton,
   ListItemText,
@@ -23,6 +28,9 @@ export const App: React.FC = () => {
   const dataset = useRecoilValue(datasetState)
   const [dataPath, setDataPath] = useRecoilState(dataPathState)
   const [path, setPath] = useState(dataPath)
+  const [selectedViewLink, setSelectedViewLink] = useRecoilState(
+    selectedViewLinkState,
+  )
   const [selected, setSelected] = useState(0)
 
   function onSaveClick() {
@@ -33,6 +41,11 @@ export const App: React.FC = () => {
         console.log(body)
       })
       .catch((err) => console.log(err))
+  }
+
+  function onViewClick(n: number) {
+    setSelectedViewLink(viewLinks[n].name)
+    setSelected(n)
   }
 
   function onLoadClick() {
@@ -62,7 +75,7 @@ export const App: React.FC = () => {
                   component={Link}
                   to={'/view/' + v.name}
                   selected={selected === i}
-                  onClick={() => setSelected(i)}
+                  onClick={() => onViewClick(i)}
                 >
                   <ListItemText primary={v.name} />
                 </ListItemButton>

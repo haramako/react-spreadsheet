@@ -2,7 +2,7 @@ import { Input, TextareaAutosize } from '@mui/material'
 import React, { useState } from 'react'
 import { useRecoilValue } from 'recoil'
 import { ICell } from './spreadsheet'
-import { selectedCellState } from './state'
+import { selectedCellState, selectionState, viewState } from './state'
 
 type DataEditorProps = {
   cell: ICell
@@ -26,6 +26,9 @@ export const StringEditor: React.FC<DataEditorProps> = ({ cell }) => {
 type DataViewProps = {}
 
 export const DataView: React.FC<DataViewProps> = ({}) => {
+  const selection = useRecoilValue(selectionState)
+  const view = useRecoilValue(viewState)
+
   const selectedCell = useRecoilValue(selectedCellState)
   const Editor = StringEditor
   const onChange = () => {}

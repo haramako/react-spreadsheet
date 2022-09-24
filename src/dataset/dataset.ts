@@ -68,7 +68,7 @@ export class DataCell implements ICell {
   }
 }
 
-type RowData = { guid: number }
+type RowData = { guid: number; data: any }
 
 //=================================================
 // DataTable
@@ -83,7 +83,7 @@ export class DataTable implements ITable {
   constructor(data: any[], headers: HeaderData[]) {
     this.data = []
     this.headers = headers
-    this.rows = data.map((row) => ({ guid: row._guid }))
+    this.rows = data.map((row) => ({ guid: row._guid, data: row }))
 
     this.colNum = this.headers.length
     this.rowNum = data.length
@@ -158,7 +158,7 @@ export class Dataset {
     }
   }
 
-  insert(row: any) {
+  insert(row: any, reorder: boolean = false) {
     if (!row._type) {
       throw new Error("attribute '_type' must set")
     }
@@ -169,7 +169,11 @@ export class Dataset {
       row._order = this.#newOrder(row._type) + 1
     }
     this.rows.set(row._guid, row)
-    this.indices.get(row._type)!.push(row)
+    const index = this.indices.get(row._type)!
+    index.push(row)
+    if (reorder) {
+      index.sort((a: any, b: any) => a._order - b._order)
+    }
   }
 
   #getIndex(indexName: string) {
@@ -213,5 +217,31 @@ export class Dataset {
       headers = this.tables.get(tableName)!.headers
     }
     return new DataTable(rows, headers)
+  }
+
+  getRowOrder(guid: number) {
+    const row = this.rows.get(guid)
+    if (!row) {
+      throw new Error(`row guid=${guid} not found`)
+    }
+    const index = this.indices.get(row._type)!
+    const i = index.findIndex((i) => i == row)
+    console.log('getRowOrder', row, i, index.length)
+    if (i < index.length - 1) {
+      console.log(row._order + index[i + 1]._order)
+      return (row._order + index[i + 1]._order) / 2
+    } else {
+      return row._order + 1
+    }
+  }
+
+  removeRow(guid: number) {
+    const row = this.rows.get(guid)
+    if (row) {
+      this.rows.delete(guid)
+      const index = this.indices.get(row._type)!
+      const removedIndex = index.filter((i) => i != row)
+      this.indices.set(row._type, removedIndex)
+    }
   }
 }

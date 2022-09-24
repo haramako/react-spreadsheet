@@ -2,27 +2,17 @@ import React, { useCallback, useMemo, useState } from 'react'
 import { SpreadSheet, HeaderData } from './spreadsheet'
 import SpreadSheetFilter from './SpreadSheetFilter'
 import { useLoaderData } from 'react-router'
-import { datasetState, datasetVersionState, selectedCellState } from './state'
+import {
+  datasetState,
+  datasetVersionState,
+  filterState,
+  selectedCellState,
+  selectionState,
+  viewState,
+} from './state'
 import { useRecoilState, useRecoilValue } from 'recoil'
 import { Button, ButtonGroup } from '@mui/material'
 import AutoSizer from 'react-virtualized-auto-sizer'
-
-function filterFunc(filter: string) {
-  return (row: any, headers: HeaderData[]): boolean => {
-    if (filter === '') {
-      return true
-    } else {
-      for (let h of headers) {
-        if (!row[h.key]) {
-          return false
-        } else if (row[h.key].toString().includes(filter)) {
-          return true
-        }
-      }
-      return false
-    }
-  }
-}
 
 export async function tablePageLoader({ params }: any) {
   return params
@@ -36,35 +26,53 @@ export const TablePage: React.FC = () => {
   const params = useLoaderData() as Params
   const dataset = useRecoilValue(datasetState)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const selection = useRecoilValue(selectionState)
   const [selectedCell, setSelectedCell] = useRecoilState(selectedCellState)
   const [datasetVersion, setDatasetVersion] =
     useRecoilState(datasetVersionState)
-  const [filter, setFilter] = useState('')
-  const view = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = datasetVersion
-    return dataset.selectAsTable(params.view, filterFunc(filter))
-  }, [dataset, datasetVersion, params.view, filter])
+  const [filter, setFilter] = useRecoilState(filterState)
+  const view = useRecoilValue(viewState)
 
   const onChange = useCallback(
     (newValue: string) => {
-      setFilter(newValue)
+      setFilter({ ...filter, filter: newValue })
     },
     [setFilter],
   )
 
   const onAddClick = useCallback(() => {
-    dataset.insert({ _type: 'enemy' })
+    const row = view.getRow(selection.selection.bottom - 1)
+    const len = selection.selection.bottom - selection.selection.top
+    for (let i = 0; i < len; i++) {
+      const newOrder = dataset.getRowOrder(row.guid)
+      dataset.insert({ _type: row.data._type, _order: newOrder }, true)
+    }
     setDatasetVersion(datasetVersion + 1)
-  }, [dataset, datasetVersion, setDatasetVersion])
+    setFilter({ ...filter, version: filter.version + 1 })
+  }, [dataset, selection, datasetVersion, setDatasetVersion])
+
+  function onRemoveClick() {
+    const sel = selection.selection
+    const rows: number[] = []
+    for (let row = sel.top; row < sel.bottom; row++) {
+      rows.push(view.getRow(row).guid)
+    }
+    for (let rowGuid of rows) {
+      dataset.removeRow(rowGuid)
+    }
+    setDatasetVersion(datasetVersion + 1)
+    setFilter({ ...filter, version: filter.version + 1 })
+  }
+
+  const sel = selection.selection
 
   return (
     <div style={{ display: 'grid', gridTemplateRows: '40px 1fr' }}>
       <div>
-        <SpreadSheetFilter value={filter} onChange={onChange} />
+        <SpreadSheetFilter value={filter.filter} onChange={onChange} />
         <ButtonGroup size="small" variant="contained">
-          <Button onClick={onAddClick}>追加</Button>
-          <Button>削除</Button>
+          <Button onClick={onAddClick}>行の追加({sel.bottom - sel.top})</Button>
+          <Button onClick={onRemoveClick}>行の削除</Button>
         </ButtonGroup>
       </div>
       <div>
