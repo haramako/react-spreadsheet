@@ -57,7 +57,7 @@ describe('DataSet', () => {
   })
 
   it('#select', () => {
-    expect(ds.select('character', (r) => r.age == 14)).toMatchObject([
+    expect(ds.select('character', (r) => r.age === 14)).toMatchObject([
       { name: 'rin' },
       { name: 'ren' },
     ])

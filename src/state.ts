@@ -1,7 +1,7 @@
 import { DataFile, Dataset, loadDataset } from './dataset'
 import { atom, selector } from 'recoil'
 import { recoilPersist } from 'recoil-persist'
-import { HeaderData, ICell, ITable, Position, Selection } from './spreadsheet'
+import { HeaderData, ICell, Position, Selection } from './spreadsheet'
 
 type ViewLink = { name: string }
 

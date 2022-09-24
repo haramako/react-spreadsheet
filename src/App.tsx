@@ -28,6 +28,7 @@ export const App: React.FC = () => {
   const dataset = useRecoilValue(datasetState)
   const [dataPath, setDataPath] = useRecoilState(dataPathState)
   const [path, setPath] = useState(dataPath)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedViewLink, setSelectedViewLink] = useRecoilState(
     selectedViewLinkState,
   )

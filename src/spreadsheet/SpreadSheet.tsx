@@ -24,7 +24,7 @@ import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
 import { reduceSpreadSheet, SpreadSheetState } from './reduceSpreadSheet'
-import { stepButtonClasses, Tooltip } from '@mui/material'
+import { Tooltip } from '@mui/material'
 import { selectionState } from '../state'
 import { useRecoilState } from 'recoil'
 

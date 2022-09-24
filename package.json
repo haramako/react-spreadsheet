@@ -45,7 +45,21 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "max-len": [
+        "warn",
+        {
+          "code": 200
+        }
+      ],
+      "react-hooks/exhaustive-deps": [
+        "warn",
+        {
+          "enableDangerousAutofixThisMayCauseInfiniteLoops": true
+        }
+      ]
+    }
   },
   "browserslist": {
     "production": [

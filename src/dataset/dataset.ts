@@ -225,7 +225,7 @@ export class Dataset {
       throw new Error(`row guid=${guid} not found`)
     }
     const index = this.indices.get(row._type)!
-    const i = index.findIndex((i) => i == row)
+    const i = index.findIndex((i) => i === row)
     console.log('getRowOrder', row, i, index.length)
     if (i < index.length - 1) {
       console.log(row._order + index[i + 1]._order)
@@ -240,7 +240,7 @@ export class Dataset {
     if (row) {
       this.rows.delete(guid)
       const index = this.indices.get(row._type)!
-      const removedIndex = index.filter((i) => i != row)
+      const removedIndex = index.filter((i) => i !== row)
       this.indices.set(row._type, removedIndex)
     }
   }

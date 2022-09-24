@@ -1,7 +1,6 @@
-import React, { useCallback, useMemo, useState } from 'react'
-import { SpreadSheet, HeaderData } from './spreadsheet'
+import React, { useCallback } from 'react'
+import { SpreadSheet } from './spreadsheet'
 import SpreadSheetFilter from './SpreadSheetFilter'
-import { useLoaderData } from 'react-router'
 import {
   datasetState,
   datasetVersionState,
@@ -13,6 +12,7 @@ import {
 import { useRecoilState, useRecoilValue } from 'recoil'
 import { Button, ButtonGroup } from '@mui/material'
 import AutoSizer from 'react-virtualized-auto-sizer'
+import { useLoaderData } from 'react-router'
 
 export async function tablePageLoader({ params }: any) {
   return params
@@ -23,10 +23,11 @@ type Params = {
 }
 
 export const TablePage: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const params = useLoaderData() as Params
   const dataset = useRecoilValue(datasetState)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const selection = useRecoilValue(selectionState)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedCell, setSelectedCell] = useRecoilState(selectedCellState)
   const [datasetVersion, setDatasetVersion] =
     useRecoilState(datasetVersionState)
@@ -37,7 +38,7 @@ export const TablePage: React.FC = () => {
     (newValue: string) => {
       setFilter({ ...filter, filter: newValue })
     },
-    [setFilter],
+    [filter, setFilter],
   )
 
   const onAddClick = useCallback(() => {
@@ -49,7 +50,15 @@ export const TablePage: React.FC = () => {
     }
     setDatasetVersion(datasetVersion + 1)
     setFilter({ ...filter, version: filter.version + 1 })
-  }, [dataset, selection, datasetVersion, setDatasetVersion])
+  }, [
+    dataset,
+    selection,
+    view,
+    filter,
+    setFilter,
+    setDatasetVersion,
+    datasetVersion,
+  ])
 
   function onRemoveClick() {
     const sel = selection.selection
