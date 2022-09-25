@@ -35,7 +35,6 @@ function doSetCellValue(table: ITable, pos: Position, newValue: any) {
     ;[err, newValue] = validator.validate(newValue)
   }
 
-  console.log(pos, table.get(pos.row, pos.col))
   if (err) {
     table.get(pos.row, pos.col).error = [newValue, err]
   } else {
@@ -51,12 +50,12 @@ export function setFilter(value: string) {
   return { type: 'setFilter' as const, value }
 }
 
-export function setCursor(value: Position, shiftKey: boolean) {
-  return { type: 'setCursor' as const, value, shiftKey }
+export function setCursor(position: Position, shiftKey: boolean) {
+  return { type: 'setCursor' as const, position, shiftKey }
 }
 
-export function startEdit(value: Position) {
-  return { type: 'startEdit' as const, value }
+export function startEdit(position: Position) {
+  return { type: 'startEdit' as const, position }
 }
 
 export function setCellValue(value: any, position: Position) {
@@ -67,6 +66,14 @@ export function setCellTempValue(value: any, position: Position) {
   return { type: 'setCellTempValue' as const, value, position }
 }
 
+export function clearCellValue(position: Position) {
+  return { type: 'clearCellValue' as const, position }
+}
+
+export function cancelCellEdit() {
+  return { type: 'cancelCellEdit' as const }
+}
+
 export type SpreadSheetAction =
   | ReturnType<typeof setCursor>
   | ReturnType<typeof setTable>
@@ -74,6 +81,8 @@ export type SpreadSheetAction =
   | ReturnType<typeof startEdit>
   | ReturnType<typeof setCellValue>
   | ReturnType<typeof setCellTempValue>
+  | ReturnType<typeof clearCellValue>
+  | ReturnType<typeof cancelCellEdit>
 
 export function reduceSpreadSheet(
   state: SpreadSheetState,
@@ -90,25 +99,30 @@ export function reduceSpreadSheet(
         selected: undefined,
         selectStart: undefined,
       }
+    case 'setFilter': {
+      return { ...state, filter: action.value }
+    }
     case 'startEdit':
-      return { ...state, editing: action.value }
+      return { ...state, editing: action.position }
     case 'setCursor': {
-      const newLoc = action.value
       if (state.tempPosition !== undefined && state.tempValue !== undefined) {
         doSetCellValue(state.data, state.tempPosition, state.tempValue)
       }
 
       let { selectStart } = state
       if (action.shiftKey) {
-        state.selection = new Selection(state.selectStart!, newLoc)
+        state.selection = new Selection(state.selectStart!, action.position)
       } else {
-        state.selection = new Selection(newLoc)
-        selectStart = newLoc
+        state.selection = new Selection(action.position)
+        selectStart = action.position
       }
+
+      state.tableRef.current!.focus()
+
       return {
         ...state,
         editing: undefined,
-        selected: newLoc,
+        selected: action.position,
         tempPosition: undefined,
         tempValue: undefined,
         selectStart,
@@ -131,12 +145,20 @@ export function reduceSpreadSheet(
         tempValue: action.value,
       }
     }
-    case 'setFilter': {
-      return { ...state, filter: action.value }
+    case 'clearCellValue': {
+      state.data.get(action.position.row, action.position.col).value = ''
+      return {
+        ...state,
+      }
     }
-    /*
-    default:
-      throw new Error(`uknown type ${action.type}`)
-      */
+    case 'cancelCellEdit': {
+      state.tableRef.current!.focus()
+      return {
+        ...state,
+        editing: undefined,
+        tempPosition: undefined,
+        tempValue: undefined,
+      }
+    }
   }
 }

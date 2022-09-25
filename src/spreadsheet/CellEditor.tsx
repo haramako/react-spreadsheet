@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Position } from './model'
-import { setCellTempValue, setCursor } from './reduceSpreadSheet'
+import {
+  cancelCellEdit,
+  setCellTempValue,
+  setCursor,
+} from './reduceSpreadSheet'
 import { useTableDispatcher } from './SpreadSheet'
 
 type CellEditorProps = {
@@ -41,6 +45,8 @@ const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
           setCursor(Position.from(location.row + 1, location.col), false),
         )
         e.preventDefault()
+      } else if (e.key == 'Escape') {
+        dispatch(cancelCellEdit())
       }
     },
     [dispatch, location],

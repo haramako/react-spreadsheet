@@ -24,6 +24,7 @@ import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
 import {
+  clearCellValue,
   reduceSpreadSheet,
   setCursor,
   setTable,
@@ -309,6 +310,14 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
         dispatch(startEdit(state.selected))
       } else if (e.key === 'F2') {
         dispatch(startEdit(state.selected))
+        e.preventDefault()
+      } else if (e.key === 'Delete') {
+        dispatch(clearCellValue(state.selected))
+        e.preventDefault()
+      } else if (e.key === 'Backspace') {
+        dispatch(clearCellValue(state.selected))
+        dispatch(startEdit(state.selected))
+        e.preventDefault()
       } else {
         let d = keyToCursor(e.key)
         if (d) {
