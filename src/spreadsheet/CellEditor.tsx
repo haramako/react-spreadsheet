@@ -45,7 +45,7 @@ const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
           setCursor(Position.from(location.row + 1, location.col), false),
         )
         e.preventDefault()
-      } else if (e.key == 'Escape') {
+      } else if (e.key === 'Escape') {
         dispatch(cancelCellEdit())
       }
     },

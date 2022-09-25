@@ -1,7 +1,8 @@
 import { DataFile, Dataset, loadDataset } from './dataset'
 import { atom, selector } from 'recoil'
 import { recoilPersist } from 'recoil-persist'
-import { HeaderData, Position, Selection } from './spreadsheet'
+import { CellType, HeaderData, Position, Selection } from './spreadsheet'
+import { iota } from './spreadsheet/util'
 
 type ViewLink = { name: string }
 
@@ -13,8 +14,38 @@ export const dataPathState = atom({
   effects_UNSTABLE: [persistAtom],
 })
 
+function arrayToObject<T>(arr: [string, T][]) {
+  return arr.reduce(function (acc: { [key: string]: any }, cur) {
+    acc[cur[0]] = cur[1]
+    return acc
+  }, {})
+}
+
+function createDummyDataset(): DataFile {
+  return arrayToObject(
+    iota(2, (tbl) => {
+      const columns = iota(10, (i) => {
+        return { key: `key${i}`, type: 'string' as CellType }
+      })
+
+      const items = iota(100, (n) => {
+        return arrayToObject(columns.map((column) => [column.key, 1]))
+      })
+
+      console.log(tbl)
+      return [`table${tbl}`, { columns, items }]
+    }),
+  )
+}
+
 async function createDataset(path: string) {
   const dataset = new Dataset()
+
+  if (path === '/api/files/dummy') {
+    loadDataset(dataset, createDummyDataset())
+    console.log(createDummyDataset())
+    return dataset
+  }
 
   await fetch(path)
     .then((res) => res.json())
@@ -80,7 +111,8 @@ export const filterState = atom({
 })
 export const selectedViewLinkState = atom({
   key: 'selectedViewLink',
-  default: 'enemy',
+  //default: 'enemy',
+  default: 'table0',
 })
 
 export const viewState = selector({

@@ -385,6 +385,17 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
     [dispatch],
   )
 
+  const gridRef = useRef<VariableSizeGrid<SpreadSheetState> | null>(null)
+
+  useEffect(() => {
+    if (state.selected && gridRef.current) {
+      gridRef.current.scrollToItem({
+        columnIndex: state.selected.col,
+        rowIndex: state.selected.row,
+      })
+    }
+  }, [state.selected])
+
   return (
     <TableContext.Provider value={table}>
       <TableDispatcherContext.Provider value={dispatch}>
@@ -439,6 +450,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
               width={width - 240}
               onScroll={onScroll}
               innerRef={innerRef}
+              ref={gridRef}
               overscanColumnCount={10}
               overscanRowCount={10}
               style={{ overflow: 'scroll' }}
