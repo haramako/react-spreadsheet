@@ -23,7 +23,14 @@ import Cell from './Cell'
 import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
-import { reduceSpreadSheet, SpreadSheetState } from './reduceSpreadSheet'
+import {
+  reduceSpreadSheet,
+  setCursor,
+  setTable,
+  SpreadSheetAction,
+  SpreadSheetState,
+  startEdit,
+} from './reduceSpreadSheet'
 import { Tooltip } from '@mui/material'
 import { selectionState } from '../state'
 import { useRecoilState } from 'recoil'
@@ -81,10 +88,11 @@ export function useTable(): ITable {
   return useContext(TableContext)
 }
 
-type TableDispatcher = (action: any) => void
-export const TableDispatcherContext = createContext<TableDispatcher>(() => {})
+export const TableDispatcherContext = createContext<
+  React.Dispatch<SpreadSheetAction>
+>(() => {})
 
-export function useTableDispatcher(): TableDispatcher {
+export function useTableDispatcher() {
   return useContext(TableDispatcherContext)
 }
 
@@ -215,7 +223,7 @@ function getCellPosition(target: EventTarget | Element | null) {
 /**
  * Pointer events for selection.
  */
-function usePointerEvents(dispatch: React.Dispatch<any>) {
+function usePointerEvents(dispatch: React.Dispatch<SpreadSheetAction>) {
   const [mouseDragging, setMouseDragging] = useState(false)
 
   const onPointerDown = useCallback(
@@ -224,7 +232,7 @@ function usePointerEvents(dispatch: React.Dispatch<any>) {
         const location = getCellPosition(e.target)
         if (location) {
           ;(e.target as Element).setPointerCapture(e.pointerId)
-          dispatch({ type: 'cursor.set', location, shiftKey: e.shiftKey })
+          dispatch(setCursor(location, e.shiftKey))
         }
         setMouseDragging(true)
       }
@@ -238,7 +246,7 @@ function usePointerEvents(dispatch: React.Dispatch<any>) {
         const target = document.elementFromPoint(e.clientX, e.clientY)
         const location = getCellPosition(target)
         if (location) {
-          dispatch({ type: 'cursor.set', location, shiftKey: true })
+          dispatch(setCursor(location, true))
         }
       }
     },
@@ -275,7 +283,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
     onChangeCell: undefined,
   })
   if (table !== state.data) {
-    dispatch({ type: 'set_table', table: table })
+    dispatch(setTable(table))
   }
 
   // Update selectionState
@@ -298,18 +306,21 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
       if (state.editing) return
       if (!state.selected) return
       if (!e.ctrlKey && isNormalKey(e.key)) {
-        dispatch({ type: 'cursor.start_edit' })
+        dispatch(startEdit(state.selected))
       } else if (e.key === 'F2') {
-        dispatch({ type: 'cursor.start_edit' })
+        dispatch(startEdit(state.selected))
       } else {
         let d = keyToCursor(e.key)
         if (d) {
-          dispatch({
-            type: 'cursor.move',
-            dx: d[0],
-            dy: d[1],
-            shiftKey: e.shiftKey,
-          })
+          dispatch(
+            setCursor(
+              Position.from(
+                state.selected.row + d[1],
+                state.selected.col + d[0],
+              ),
+              e.shiftKey,
+            ),
+          )
           e.preventDefault()
         }
       }
@@ -359,7 +370,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
       const target = document.elementFromPoint(e.clientX, e.clientY)
       const location = getCellPosition(target)
       if (location) {
-        dispatch({ type: 'cell.doubleclick', location })
+        dispatch(startEdit(location))
       }
     },
     [dispatch],

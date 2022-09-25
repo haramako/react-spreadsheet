@@ -27,7 +27,7 @@ export type SpreadSheetState = {
   onChangeCell?: (cell?: ICell) => void
 }
 
-function setCellValue(table: ITable, pos: Position, newValue: any) {
+function doSetCellValue(table: ITable, pos: Position, newValue: any) {
   const header = table.getHeader(pos.col)
   const validator = validators.findValidator(header.validatorType)
   let err: string | undefined
@@ -43,32 +43,59 @@ function setCellValue(table: ITable, pos: Position, newValue: any) {
   }
 }
 
+export function setTable(value: ITable) {
+  return { type: 'setTable' as const, value }
+}
+
+export function setFilter(value: string) {
+  return { type: 'setFilter' as const, value }
+}
+
+export function setCursor(value: Position, shiftKey: boolean) {
+  return { type: 'setCursor' as const, value, shiftKey }
+}
+
+export function startEdit(value: Position) {
+  return { type: 'startEdit' as const, value }
+}
+
+export function setCellValue(value: any, position: Position) {
+  return { type: 'setCellValue' as const, value, position }
+}
+
+export function setCellTempValue(value: any, position: Position) {
+  return { type: 'setCellTempValue' as const, value, position }
+}
+
+export type SpreadSheetAction =
+  | ReturnType<typeof setCursor>
+  | ReturnType<typeof setTable>
+  | ReturnType<typeof setFilter>
+  | ReturnType<typeof startEdit>
+  | ReturnType<typeof setCellValue>
+  | ReturnType<typeof setCellTempValue>
+
 export function reduceSpreadSheet(
   state: SpreadSheetState,
-  action: any,
+  action: SpreadSheetAction,
 ): SpreadSheetState {
   console.log(action)
   switch (action.type) {
-    case 'set_table':
-      const table = action.table
+    case 'setTable':
       return {
         ...state,
-        data: table,
+        data: action.value,
         selection: new Selection(0, 0, 0, 0),
         editing: undefined,
         selected: undefined,
         selectStart: undefined,
       }
-    case 'set_onChangeCell':
-      return { ...state, onChangeCell: action.onChangeCell }
-    case 'cell.doubleclick':
-      return { ...state, editing: action.location }
-    case 'cursor.start_edit':
-      return { ...state, editing: state.selected }
-    case 'cursor.set': {
-      const newLoc = action.location
+    case 'startEdit':
+      return { ...state, editing: action.value }
+    case 'setCursor': {
+      const newLoc = action.value
       if (state.tempPosition !== undefined && state.tempValue !== undefined) {
-        setCellValue(state.data, state.tempPosition, state.tempValue)
+        doSetCellValue(state.data, state.tempPosition, state.tempValue)
       }
 
       let { selectStart } = state
@@ -87,82 +114,29 @@ export function reduceSpreadSheet(
         selectStart,
       }
     }
-    case 'cursor.move': {
-      if (state.tempPosition !== undefined && state.tempValue !== undefined) {
-        setCellValue(state.data, state.tempPosition, state.tempValue)
-      }
-      const newLoc = Position.from(
-        state.selected!.row + action.dy,
-        state.selected!.col + action.dx,
-      )
-      let { selectStart } = state
-      if (action.shiftKey) {
-        state.selection = new Selection(state.selectStart!, newLoc)
-      } else {
-        state.selection = new Selection(newLoc)
-        selectStart = newLoc
-      }
-      return {
-        ...state,
-        editing: undefined,
-        selected: newLoc,
-        selectStart,
-        tempPosition: undefined,
-        tempValue: undefined,
-      }
-    }
-    case 'cell.change_value': {
+    case 'setCellValue': {
       let { data } = state
-      let location: Position = action.location
-      const header = data.getHeader(location.col)
-      const validator = validators.findValidator(header.validatorType)
-      let err: string | undefined
-      let newValue: any
-      if (validator) {
-        ;[err, newValue] = validator.validate(action.newValue)
-      } else {
-        newValue = action.newValue
-      }
-
-      const cell = data.get(location.row, location.col)
-      if (err) {
-        cell.error = [newValue, err]
-      } else {
-        cell.value = newValue
-      }
-      return { ...state }
-    }
-    case 'editor.setValue': {
-      let { data } = state
-      const editing = action.location as Position
+      const editing = action.position
       if (editing != null) {
-        setCellValue(data, editing, action.newValue)
+        doSetCellValue(data, editing, action.value)
         return { ...state, tempPosition: undefined, tempValue: undefined }
       } else {
         return state
       }
     }
-    case 'editor.end':
-      if (state.tempPosition !== undefined && state.tempValue !== undefined) {
-        setCellValue(state.data, state.tempPosition, state.tempValue)
-      }
-      state.tableRef.current!.focus()
+    case 'setCellTempValue': {
       return {
         ...state,
-        editing: undefined,
-        tempPosition: undefined,
-        tempValue: undefined,
+        tempPosition: action.position,
+        tempValue: action.value,
       }
-    case 'editor.setTempValue': {
-      const tempPosition = action.location
-      const tempValue = action.newValue
-      return { ...state, tempPosition, tempValue }
     }
-    case 'filter.set': {
-      let { value } = action
-      return { ...state, filter: value }
+    case 'setFilter': {
+      return { ...state, filter: action.value }
     }
+    /*
     default:
       throw new Error(`uknown type ${action.type}`)
+      */
   }
 }

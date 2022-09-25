@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react'
 import { Position } from './model'
+import { setCellValue } from './reduceSpreadSheet'
 import { useTableDispatcher } from './SpreadSheet'
 
 //=================================================
@@ -26,7 +27,7 @@ export const BooleanVisualizer: React.FC<VisualizerProps> = ({
 }) => {
   const dispatch = useTableDispatcher()
   const onChange = useCallback(() => {
-    dispatch({ type: 'cell.change_value', location, newValue: !value })
+    dispatch(setCellValue(!value, location))
   }, [value, dispatch, location])
   return <input type="checkbox" checked={!!value} onChange={onChange} />
 }

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Position } from './model'
+import { setCellTempValue, setCursor } from './reduceSpreadSheet'
 import { useTableDispatcher } from './SpreadSheet'
 
 type CellEditorProps = {
@@ -26,7 +27,7 @@ const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
   const onChange = useCallback(
     (newValue: string) => {
       setVal(newValue)
-      dispatch({ type: 'editor.setTempValue', location, newValue })
+      dispatch(setCellTempValue(newValue, location))
     },
     [dispatch, location],
   )
@@ -36,13 +37,13 @@ const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
       if (e.key === 'Enter') {
-        //dispatch({ type: 'editor.setValue', location, newValue: val })
-        //dispatch({ type: 'editor.end' })
-        dispatch({ type: 'cursor.move', dx: 0, dy: 1 })
+        dispatch(
+          setCursor(Position.from(location.row + 1, location.col), false),
+        )
         e.preventDefault()
       }
     },
-    [dispatch],
+    [dispatch, location],
   )
   const ref = useRef<HTMLDivElement | null>(null)
 
