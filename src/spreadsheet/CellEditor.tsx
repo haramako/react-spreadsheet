@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Position, ICell } from './model'
+import { Position } from './model'
 import { useTableDispatcher } from './SpreadSheet'
 
 type CellEditorProps = {
-  cell: ICell
   value: string
   location: Position
 }
@@ -24,21 +23,26 @@ const useAutoFocus = () => {
 const CellEditor: React.FC<CellEditorProps> = ({ value, location }) => {
   const dispatch = useTableDispatcher()
   const [val, setVal] = useState(value)
-  const onChange = useCallback((newValue: string) => {
-    setVal(newValue)
-  }, [])
+  const onChange = useCallback(
+    (newValue: string) => {
+      setVal(newValue)
+      dispatch({ type: 'editor.setTempValue', location, newValue })
+    },
+    [dispatch, location],
+  )
 
   const inputRef = useAutoFocus()
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement | HTMLInputElement>) => {
       if (e.key === 'Enter') {
-        dispatch({ type: 'editor.end', location, newValue: val })
+        //dispatch({ type: 'editor.setValue', location, newValue: val })
+        //dispatch({ type: 'editor.end' })
         dispatch({ type: 'cursor.move', dx: 0, dy: 1 })
         e.preventDefault()
       }
     },
-    [val, dispatch, location],
+    [dispatch],
   )
   const ref = useRef<HTMLDivElement | null>(null)
 

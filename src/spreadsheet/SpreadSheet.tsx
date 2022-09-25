@@ -10,7 +10,7 @@ import React, {
   useEffect,
 } from 'react'
 import './spreadsheet.css'
-import { Position, Selection, ITable, IHeader, IRow, ICell } from './model'
+import { Position, Selection, ITable, IHeader, IRow } from './model'
 import {
   VariableSizeGrid,
   VariableSizeList,
@@ -257,14 +257,12 @@ type SpreadSheetProps = {
   table: ITable
   width?: number
   height?: number
-  onChangeCell?: (cell?: ICell) => void
 }
 
 export const SpreadSheet: React.FC<SpreadSheetProps> = ({
   table,
   width,
   height,
-  onChangeCell,
 }) => {
   width ??= 800
   height ??= 600
@@ -294,10 +292,6 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
       })
     }
   }, [state, selection, setSelection])
-
-  if (onChangeCell !== state.onChangeCell) {
-    dispatch({ type: 'set_onChangeCell', onChangeCell })
-  }
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -346,7 +340,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
     const cell = table.get(state.editing.row, state.editing.col)
     const value = cell.value
     editorPortal = createPortal(
-      <CellEditor location={state.editing} {...{ cell, dispatch, value }} />,
+      <CellEditor location={state.editing} {...{ dispatch, value }} />,
       innerRef.current,
     )
   }

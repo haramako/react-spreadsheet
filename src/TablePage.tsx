@@ -5,7 +5,6 @@ import {
   datasetState,
   datasetVersionState,
   filterState,
-  selectedCellState,
   selectionState,
   viewState,
 } from './state'
@@ -27,8 +26,6 @@ export const TablePage: React.FC = () => {
   const params = useLoaderData() as Params
   const dataset = useRecoilValue(datasetState)
   const selection = useRecoilValue(selectionState)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [selectedCell, setSelectedCell] = useRecoilState(selectedCellState)
   const [datasetVersion, setDatasetVersion] =
     useRecoilState(datasetVersionState)
   const [filter, setFilter] = useRecoilState(filterState)
@@ -87,12 +84,7 @@ export const TablePage: React.FC = () => {
       <div>
         <AutoSizer>
           {({ height, width }) => {
-            return (
-              <SpreadSheet
-                table={view}
-                {...{ width, height, onChangeCell: setSelectedCell }}
-              />
-            )
+            return <SpreadSheet table={view} {...{ width, height }} />
           }}
         </AutoSizer>
       </div>

@@ -1,7 +1,7 @@
 import { DataFile, Dataset, loadDataset } from './dataset'
 import { atom, selector } from 'recoil'
 import { recoilPersist } from 'recoil-persist'
-import { HeaderData, ICell, Position, Selection } from './spreadsheet'
+import { HeaderData, Position, Selection } from './spreadsheet'
 
 type ViewLink = { name: string }
 
@@ -42,11 +42,6 @@ export const viewLinksState = selector<ViewLink[]>({
     const dataset = await get(datasetState)
     return [...dataset.tables.keys()].map((name) => ({ name }))
   },
-})
-
-export const selectedCellState = atom<ICell | undefined>({
-  key: 'selectedCell',
-  default: undefined,
 })
 
 type SelectionState = {
@@ -94,6 +89,9 @@ export const viewState = selector({
     const dataset = get(datasetState)
     const filter = get(filterState)
     const viewLink = get(selectedViewLinkState)
-    return dataset.selectAsTable(viewLink, filterFunc(filter.filter))
+    const result = dataset.selectAsTable(viewLink, filterFunc(filter.filter))
+    console.log(result)
+    return result
   },
+  dangerouslyAllowMutability: true, // See: https://recoiljs.org/docs/api-reference/core/selector
 })
