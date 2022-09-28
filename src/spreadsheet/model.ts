@@ -87,12 +87,7 @@ export class Selection {
   }
 
   contains(l: Position): boolean {
-    return (
-      l.row >= this.top &&
-      l.row < this.bottom &&
-      l.col >= this.left &&
-      l.col < this.right
-    )
+    return l.row >= this.top && l.row < this.bottom && l.col >= this.left && l.col < this.right
   }
 }
 
@@ -115,7 +110,7 @@ export interface IRow {
 }
 
 export interface ICell {
-  value: string
+  value: any
   error: [string, string] | undefined
   get version(): number
   get guid(): number
@@ -147,7 +142,7 @@ export class HeaderData implements IHeader {
       this.key = t.key
       this.name = t.name ?? t.key
       this.type = t.type ?? 'string'
-      this.validatorType = t.validatorType ?? 'string'
+      this.validatorType = t.validatorType ?? this.type
       this.unique = t.unique ?? false
     } else {
       const key: string = args[0]

@@ -10,6 +10,7 @@ validators.add(new _validators.BooleanValidator())
 
 function doSetCellValue(table: ITable, pos: Position, newValue: any) {
   const header = table.getHeader(pos.col)
+  console.log(header)
   const validator = validators.findValidator(header.validatorType)
   let err: string | undefined
   if (validator) {
