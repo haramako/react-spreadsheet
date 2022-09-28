@@ -39,7 +39,8 @@
     "eject": "react-scripts eject",
     "prepare": "husky install",
     "lint-staged": "lint-staged",
-    "server": "nodemon server.mjs"
+    "server": "nodemon server.mjs",
+    "dependency-graph": "npx ts_dependency_graph --graph_folder --start src/index.tsx | dot -T svg >dependency-graph.svg"
   },
   "eslintConfig": {
     "extends": [

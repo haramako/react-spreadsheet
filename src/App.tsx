@@ -1,4 +1,4 @@
-import React, { Suspense, useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import { Outlet } from 'react-router'
 import { Link } from 'react-router-dom'
 import { useRecoilState, useRecoilValue } from 'recoil'
@@ -51,6 +51,16 @@ export const App: React.FC = () => {
 
   function onLoadClick() {
     setDataPath(path)
+  }
+
+  useEffect(() => {
+    if (!dataset.tables.has(selectedViewLink)) {
+      setSelectedViewLink(dataset.tables.keys().next().value)
+    }
+  })
+
+  if (!dataset.tables.has(selectedViewLink)) {
+    return <></>
   }
 
   return (

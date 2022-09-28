@@ -5,7 +5,7 @@ import {
   setCellTempValue,
   setCursor,
 } from './reduceSpreadSheet'
-import { useTableDispatcher } from './SpreadSheet'
+import { useTableDispatcher } from './contexts'
 
 type CellEditorProps = {
   value: string

@@ -2,7 +2,7 @@ import { DataFile, Dataset, loadDataset } from './dataset'
 import { atom, selector } from 'recoil'
 import { recoilPersist } from 'recoil-persist'
 import { CellType, HeaderData, Position, Selection } from './spreadsheet'
-import { iota } from './spreadsheet/util'
+import { iota } from './util'
 
 type ViewLink = { name: string }
 
@@ -32,7 +32,6 @@ function createDummyDataset(): DataFile {
         return arrayToObject(columns.map((column) => [column.key, 1]))
       })
 
-      console.log(tbl)
       return [`table${tbl}`, { columns, items }]
     }),
   )
@@ -43,7 +42,6 @@ async function createDataset(path: string) {
 
   if (path === '/api/files/dummy') {
     loadDataset(dataset, createDummyDataset())
-    console.log(createDummyDataset())
     return dataset
   }
 
@@ -109,10 +107,9 @@ export const filterState = atom({
   key: 'filter',
   default: { filter: '', version: 0 },
 })
-export const selectedViewLinkState = atom({
+export const selectedViewLinkState = atom<string>({
   key: 'selectedViewLink',
-  //default: 'enemy',
-  default: 'table0',
+  default: 'enemy',
 })
 
 export const viewState = selector({
@@ -121,9 +118,7 @@ export const viewState = selector({
     const dataset = get(datasetState)
     const filter = get(filterState)
     const viewLink = get(selectedViewLinkState)
-    const result = dataset.selectAsTable(viewLink, filterFunc(filter.filter))
-    console.log(result)
-    return result
+    return dataset.selectAsTable(viewLink, filterFunc(filter.filter))
   },
   dangerouslyAllowMutability: true, // See: https://recoiljs.org/docs/api-reference/core/selector
 })

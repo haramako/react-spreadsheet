@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react'
 import { Position } from './model'
 import { setCellValue } from './reduceSpreadSheet'
-import { useTableDispatcher } from './SpreadSheet'
+import { useTableDispatcher } from './contexts'
 
 //=================================================
 // Visualizer

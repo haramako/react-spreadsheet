@@ -1,10 +1,5 @@
-import {
-  ICell,
-  ITable,
-  Position,
-  Selection,
-  ValueValidatorCollection,
-} from './model'
+import { SpreadSheetState } from './contexts'
+import { ITable, Position, Selection, ValueValidatorCollection } from './model'
 import * as _validators from './validators'
 
 const validators = new ValueValidatorCollection()
@@ -12,20 +7,6 @@ validators.add(new _validators.IntegerValidator())
 validators.add(new _validators.NumberValidator())
 validators.add(new _validators.StringValidator())
 validators.add(new _validators.BooleanValidator())
-
-export type SpreadSheetState = {
-  data: ITable
-  selected?: Position
-  selectStart?: Position
-  selection: Selection
-  editing?: Position
-  tableRef: React.RefObject<HTMLDivElement>
-  tempPosition?: Position
-  tempValue?: any
-  dispatch?: (action: any) => void
-  filter: string
-  onChangeCell?: (cell?: ICell) => void
-}
 
 function doSetCellValue(table: ITable, pos: Position, newValue: any) {
   const header = table.getHeader(pos.col)

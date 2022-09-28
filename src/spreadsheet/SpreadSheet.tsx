@@ -4,8 +4,6 @@ import React, {
   useCallback,
   useReducer,
   useLayoutEffect,
-  createContext,
-  useContext,
   ReactPortal,
   useEffect,
 } from 'react'
@@ -29,12 +27,16 @@ import {
   setCursor,
   setTable,
   SpreadSheetAction,
-  SpreadSheetState,
   startEdit,
 } from './reduceSpreadSheet'
 import { Tooltip } from '@mui/material'
 import { selectionState } from '../state'
 import { useRecoilState } from 'recoil'
+import {
+  SpreadSheetState,
+  TableContext,
+  TableDispatcherContext,
+} from './contexts'
 
 //=================================================
 // HeadCell
@@ -83,19 +85,6 @@ export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
 //=================================================
 // SpreadSheet
 //=================================================
-export const TableContext = createContext<ITable>(null as unknown as ITable)
-
-export function useTable(): ITable {
-  return useContext(TableContext)
-}
-
-export const TableDispatcherContext = createContext<
-  React.Dispatch<SpreadSheetAction>
->(() => {})
-
-export function useTableDispatcher() {
-  return useContext(TableDispatcherContext)
-}
 
 function keyToCursor(key: string) {
   switch (key) {
