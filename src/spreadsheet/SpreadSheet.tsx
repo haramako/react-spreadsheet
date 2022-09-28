@@ -1,42 +1,17 @@
-import React, {
-  useState,
-  useRef,
-  useCallback,
-  useReducer,
-  useLayoutEffect,
-  ReactPortal,
-  useEffect,
-} from 'react'
+import React, { useState, useRef, useCallback, useReducer, useLayoutEffect, ReactPortal, useEffect } from 'react'
 import './spreadsheet.css'
 import { Position, Selection, ITable, IHeader, IRow } from './model'
-import {
-  VariableSizeGrid,
-  VariableSizeList,
-  GridOnScrollProps,
-  GridChildComponentProps,
-  ListChildComponentProps,
-} from 'react-window'
+import { VariableSizeGrid, VariableSizeList, GridOnScrollProps, GridChildComponentProps, ListChildComponentProps } from 'react-window'
 import shallowEquals from 'shallow-equals'
 import Cell from './Cell'
 import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
-import {
-  clearCellValue,
-  reduceSpreadSheet,
-  setCursor,
-  setTable,
-  SpreadSheetAction,
-  startEdit,
-} from './reduceSpreadSheet'
+import { clearCellValue, reduceSpreadSheet, setCursor, setTable, SpreadSheetAction, startEdit } from './reduceSpreadSheet'
 import { Tooltip } from '@mui/material'
 import { selectionState } from '../state'
 import { useRecoilState } from 'recoil'
-import {
-  SpreadSheetState,
-  TableContext,
-  TableDispatcherContext,
-} from './contexts'
+import { SpreadSheetState, TableContext, TableDispatcherContext } from './contexts'
 
 //=================================================
 // HeadCell
@@ -47,17 +22,15 @@ type HeadCellProps = {
   style: any
 }
 
-export const HeadCell: React.FC<HeadCellProps> = React.memo(
-  ({ value, style }) => {
-    return (
-      <Tooltip title={value.key}>
-        <div className="spx__head-cell" style={style}>
-          {value.name}
-        </div>
-      </Tooltip>
-    )
-  },
-)
+export const HeadCell: React.FC<HeadCellProps> = React.memo(({ value, style }) => {
+  return (
+    <Tooltip title={value.key}>
+      <div className="spx__head-cell" style={style}>
+        {value.name}
+      </div>
+    </Tooltip>
+  )
+})
 
 //=================================================
 // RowHeadCell
@@ -70,17 +43,15 @@ type RowHeadCellProps = {
   style: any
 }
 
-export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(
-  ({ value, row, name, style }) => {
-    return (
-      <Tooltip title={`GUID:${row.guid}`}>
-        <div className="spx__row-head-cell" style={style}>
-          {value}:{name}
-        </div>
-      </Tooltip>
-    )
-  },
-)
+export const RowHeadCell: React.FC<RowHeadCellProps> = React.memo(({ value, row, name, style }) => {
+  return (
+    <Tooltip title={`GUID:${row.guid}`}>
+      <div className="spx__row-head-cell" style={style}>
+        {value}:{name}
+      </div>
+    </Tooltip>
+  )
+})
 
 //=================================================
 // SpreadSheet
@@ -106,17 +77,10 @@ function keyToCursor(key: string) {
 }
 
 function isNormalKey(key: string) {
-  return (
-    key.length === 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
-  )
+  return key.length === 1 && key.charCodeAt(0) > 0x20 && key.charCodeAt(0) <= 0x7e
 }
 
-function MakeCell({
-  columnIndex,
-  rowIndex,
-  style,
-  data,
-}: GridChildComponentProps<SpreadSheetState>) {
+function MakeCell({ columnIndex, rowIndex, style, data }: GridChildComponentProps<SpreadSheetState>) {
   // `style` is created every render, so keep identity if not change.
   const [savedStyle, setSavedStyle] = useState(style)
   if (!shallowEquals(style, savedStyle)) {
@@ -143,19 +107,11 @@ function MakeCell({
   )
 }
 
-function makeColumnHead({
-  index,
-  style,
-  data,
-}: ListChildComponentProps<SpreadSheetState>) {
+function makeColumnHead({ index, style, data }: ListChildComponentProps<SpreadSheetState>) {
   return <HeadCell value={data.data.getHeader(index)} style={style} />
 }
 
-function makeRowHead({
-  index,
-  style,
-  data,
-}: ListChildComponentProps<SpreadSheetState>) {
+function makeRowHead({ index, style, data }: ListChildComponentProps<SpreadSheetState>) {
   const row = data.data.getRow(index)
   const cell = data.data.get(index, 0)
   const name = (cell && cell.value) ?? ''
@@ -257,11 +213,7 @@ type SpreadSheetProps = {
   height?: number
 }
 
-export const SpreadSheet: React.FC<SpreadSheetProps> = ({
-  table,
-  width,
-  height,
-}) => {
+export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table, width, height }) => {
   width ??= 800
   height ??= 600
   const ref = useRef<HTMLDivElement>(null)
@@ -279,10 +231,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
   // Update selectionState
   const [selection, setSelection] = useRecoilState(selectionState)
   useEffect(() => {
-    if (
-      state.selection !== selection.selection ||
-      state.selected !== selection.cursor
-    ) {
+    if (state.selection !== selection.selection || state.selected !== selection.cursor) {
       setSelection({
         ...selection,
         selection: state.selection,
@@ -310,15 +259,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
       } else {
         let d = keyToCursor(e.key)
         if (d) {
-          dispatch(
-            setCursor(
-              Position.from(
-                state.selected.row + d[1],
-                state.selected.col + d[0],
-              ),
-              e.shiftKey,
-            ),
-          )
+          dispatch(setCursor(Position.from(state.selected.row + d[1], state.selected.col + d[0]), e.shiftKey))
           e.preventDefault()
         }
       }
@@ -327,8 +268,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
   )
 
   const { onScroll, colHeadRef, rowHeadRef } = useScrollSynchronization()
-  const { onPointerDown, onPointerMove, onPointerUp } =
-    usePointerEvents(dispatch)
+  const { onPointerDown, onPointerMove, onPointerUp } = usePointerEvents(dispatch)
 
   const columnWidth = useCallback((i: number) => {
     return i % 2 === 0 ? 80 : 100
@@ -348,19 +288,13 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({
   if (innerRef.current && state.editing) {
     const cell = table.get(state.editing.row, state.editing.col)
     const value = cell.value
-    editorPortal = createPortal(
-      <CellEditor location={state.editing} {...{ dispatch, value }} />,
-      innerRef.current,
-    )
+    editorPortal = createPortal(<CellEditor location={state.editing} {...{ dispatch, value }} />, innerRef.current)
   }
 
   // Create selection rect portal.
   let selectionRectPortal: ReactPortal | null = null
   if (innerRef.current && !state.selection.isNone()) {
-    selectionRectPortal = createPortal(
-      <SelectionRect selection={state.selection} />,
-      innerRef.current,
-    )
+    selectionRectPortal = createPortal(<SelectionRect selection={state.selection} />, innerRef.current)
   }
 
   const onDoubleClick = useCallback(
