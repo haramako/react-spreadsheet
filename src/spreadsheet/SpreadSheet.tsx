@@ -7,7 +7,7 @@ import Cell from './Cell'
 import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
-import { clearCellValue, reduceSpreadSheet, setCursor, setTable, SpreadSheetAction, startEdit } from './reduceSpreadSheet'
+import { clearCellValue, reduceSpreadSheet, setCursor, setTable, SpreadSheetAction, startEdit, moveCursor } from './reduceSpreadSheet'
 import { Tooltip } from '@mui/material'
 import { selectionState } from '../state'
 import { useRecoilState } from 'recoil'
@@ -259,7 +259,7 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table, width, height }
       } else {
         let d = keyToCursor(e.key)
         if (d) {
-          dispatch(setCursor(Position.from(state.selected.row + d[1], state.selected.col + d[0]), e.shiftKey))
+          dispatch(moveCursor(d[1], d[0], e.shiftKey))
           e.preventDefault()
         }
       }

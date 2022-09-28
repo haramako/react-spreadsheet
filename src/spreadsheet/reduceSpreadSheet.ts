@@ -35,6 +35,10 @@ export function setCursor(position: Position, shiftKey: boolean) {
   return { type: 'setCursor' as const, position, shiftKey }
 }
 
+export function moveCursor(dRow: number, dCol: number, shiftKey: boolean) {
+  return { type: 'moveCursor' as const, dRow, dCol, shiftKey }
+}
+
 export function startEdit(position: Position) {
   return { type: 'startEdit' as const, position }
 }
@@ -57,6 +61,7 @@ export function cancelCellEdit() {
 
 export type SpreadSheetAction =
   | ReturnType<typeof setCursor>
+  | ReturnType<typeof moveCursor>
   | ReturnType<typeof setTable>
   | ReturnType<typeof setFilter>
   | ReturnType<typeof startEdit>
@@ -65,10 +70,7 @@ export type SpreadSheetAction =
   | ReturnType<typeof clearCellValue>
   | ReturnType<typeof cancelCellEdit>
 
-export function reduceSpreadSheet(
-  state: SpreadSheetState,
-  action: SpreadSheetAction,
-): SpreadSheetState {
+export function reduceSpreadSheet(state: SpreadSheetState, action: SpreadSheetAction): SpreadSheetState {
   console.log(action)
   switch (action.type) {
     case 'setTable':
@@ -85,30 +87,20 @@ export function reduceSpreadSheet(
     }
     case 'startEdit':
       return { ...state, editing: action.position }
-    case 'setCursor': {
-      if (state.tempPosition !== undefined && state.tempValue !== undefined) {
-        doSetCellValue(state.data, state.tempPosition, state.tempValue)
+    case 'moveCursor': {
+      if (!state.selected) {
+        return state
       }
-
-      let { selectStart } = state
-      if (action.shiftKey) {
-        state.selection = new Selection(state.selectStart!, action.position)
+      const table = state.data
+      const position = Position.from(state.selected.row + action.dRow, state.selected.col + action.dCol)
+      if (position.row >= 0 && position.row < table.rowNum && position.col >= 0 && position.col < table.colNum) {
+        return doSetCursor(state, position, action.shiftKey)
       } else {
-        state.selection = new Selection(action.position)
-        selectStart = action.position
-      }
-
-      state.tableRef.current!.focus()
-
-      return {
-        ...state,
-        editing: undefined,
-        selected: action.position,
-        tempPosition: undefined,
-        tempValue: undefined,
-        selectStart,
+        return state
       }
     }
+    case 'setCursor':
+      return doSetCursor(state, action.position, action.shiftKey)
     case 'setCellValue': {
       let { data } = state
       const editing = action.position
@@ -141,5 +133,30 @@ export function reduceSpreadSheet(
         tempValue: undefined,
       }
     }
+  }
+}
+
+function doSetCursor(state: SpreadSheetState, position: Position, shiftKey: boolean) {
+  if (state.tempPosition !== undefined && state.tempValue !== undefined) {
+    doSetCellValue(state.data, state.tempPosition, state.tempValue)
+  }
+
+  let { selectStart } = state
+  if (shiftKey) {
+    state.selection = new Selection(state.selectStart!, position)
+  } else {
+    state.selection = new Selection(position)
+    selectStart = position
+  }
+
+  state.tableRef.current!.focus()
+
+  return {
+    ...state,
+    editing: undefined,
+    selected: position,
+    tempPosition: undefined,
+    tempValue: undefined,
+    selectStart,
   }
 }
