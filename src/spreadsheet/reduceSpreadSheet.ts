@@ -60,6 +60,10 @@ export function cancelCellEdit() {
   return { type: 'cancelCellEdit' as const }
 }
 
+export function resizeColumn(column: number) {
+  return { type: 'resizeColumn' as const, column }
+}
+
 export type SpreadSheetAction =
   | ReturnType<typeof setCursor>
   | ReturnType<typeof moveCursor>
@@ -70,6 +74,7 @@ export type SpreadSheetAction =
   | ReturnType<typeof setCellTempValue>
   | ReturnType<typeof clearCellValue>
   | ReturnType<typeof cancelCellEdit>
+  | ReturnType<typeof resizeColumn>
 
 export function reduceSpreadSheet(state: SpreadSheetState, action: SpreadSheetAction): SpreadSheetState {
   console.log(action)
@@ -133,6 +138,11 @@ export function reduceSpreadSheet(state: SpreadSheetState, action: SpreadSheetAc
         tempPosition: undefined,
         tempValue: undefined,
       }
+    }
+    case 'resizeColumn': {
+      state.gridRef.current?.resetAfterColumnIndex(action.column, true)
+      state.colHeadRef.current?.resetAfterIndex(action.column, true)
+      return { ...state }
     }
   }
 }

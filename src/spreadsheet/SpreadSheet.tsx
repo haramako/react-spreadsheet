@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useReducer, useLayoutEffect, ReactPortal, useEffect } from 'react'
+import React, { useState, useRef, useCallback, useReducer, useLayoutEffect, ReactPortal, useEffect, CSSProperties } from 'react'
 import './spreadsheet.css'
 import { Position, Selection, ITable, IHeader, IRow } from './model'
 import { VariableSizeGrid, VariableSizeList, GridOnScrollProps, GridChildComponentProps, ListChildComponentProps } from 'react-window'
@@ -7,25 +7,50 @@ import Cell from './Cell'
 import CellEditor from './CellEditor'
 import { createPortal } from 'react-dom'
 import SelectionRect from './SelectionRect'
-import { clearCellValue, reduceSpreadSheet, setCursor, setTable, SpreadSheetAction, startEdit, moveCursor } from './reduceSpreadSheet'
+import { clearCellValue, reduceSpreadSheet, setCursor, setTable, SpreadSheetAction, startEdit, moveCursor, resizeColumn } from './reduceSpreadSheet'
 import { Tooltip } from '@mui/material'
 import { selectionState } from '../state'
 import { useRecoilState } from 'recoil'
-import { SpreadSheetState, TableContext, TableDispatcherContext } from './contexts'
+import { SpreadSheetState, TableContext, TableDispatcherContext, useTableDispatcher } from './contexts'
 
 //=================================================
 // HeadCell
 //=================================================z
 
 type HeadCellProps = {
+  column: number
   value: IHeader
-  style: any
+  style: CSSProperties
 }
 
-export const HeadCell: React.FC<HeadCellProps> = React.memo(({ value, style }) => {
+export const HeadCell: React.FC<HeadCellProps> = React.memo(({ column, value, style }) => {
+  const dispatch = useTableDispatcher()
+  const borderStyle: CSSProperties = { display: 'inline-block', width: 20, height: '100%', cursor: 'col-resize', zIndex: 2, position: 'absolute', right: '-10px' }
+  const [dragging, setDragging] = useState(false)
+  function onMouseDown(e: React.PointerEvent<HTMLDivElement>) {
+    setDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  function onMouseUp(e: React.PointerEvent<HTMLDivElement>) {
+    setDragging(false)
+    e.currentTarget.releasePointerCapture(e.pointerId)
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  function onMouseMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (dragging) {
+      value.columnWidth += e.movementX
+      dispatch(resizeColumn(column))
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
   return (
     <Tooltip title={value.key}>
-      <div className="spx__head-cell" style={style}>
+      <div className="spx__head-cell" style={style} onPointerDown={onMouseDown} onPointerUp={onMouseUp} onPointerMove={onMouseMove}>
+        <div style={borderStyle}></div>
         {value.name}
       </div>
     </Tooltip>
@@ -108,7 +133,7 @@ function MakeCell({ columnIndex, rowIndex, style, data }: GridChildComponentProp
 }
 
 function makeColumnHead({ index, style, data }: ListChildComponentProps<SpreadSheetState>) {
-  return <HeadCell value={data.data.getHeader(index)} style={style} />
+  return <HeadCell column={index} value={data.data.getHeader(index)} style={style} />
 }
 
 function makeRowHead({ index, style, data }: ListChildComponentProps<SpreadSheetState>) {
@@ -217,10 +242,15 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table, width, height }
   width ??= 800
   height ??= 600
   const ref = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<VariableSizeGrid<SpreadSheetState> | null>(null)
+  const { onScroll, colHeadRef, rowHeadRef } = useScrollSynchronization()
   const [state, dispatch] = useReducer(reduceSpreadSheet, {
     data: table,
     selection: new Selection(0, 0, 0, 0),
     tableRef: ref,
+    gridRef,
+    colHeadRef,
+    rowHeadRef,
     filter: '',
     onChangeCell: undefined,
   })
@@ -267,12 +297,14 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table, width, height }
     [state, dispatch],
   )
 
-  const { onScroll, colHeadRef, rowHeadRef } = useScrollSynchronization()
   const { onPointerDown, onPointerMove, onPointerUp } = usePointerEvents(dispatch)
 
-  const columnWidth = useCallback((i: number) => {
-    return i % 2 === 0 ? 80 : 100
-  }, [])
+  const columnWidth = useCallback(
+    (i: number) => {
+      return state.data.getHeader(i).columnWidth
+    },
+    [state.data],
+  )
 
   const columnHeight = useCallback((i: number) => {
     return 20
@@ -307,8 +339,6 @@ export const SpreadSheet: React.FC<SpreadSheetProps> = ({ table, width, height }
     },
     [dispatch],
   )
-
-  const gridRef = useRef<VariableSizeGrid<SpreadSheetState> | null>(null)
 
   useEffect(() => {
     if (state.selected && gridRef.current) {

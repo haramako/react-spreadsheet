@@ -102,6 +102,7 @@ export interface IHeader {
   name: string
   type: CellType
   validatorType: string
+  columnWidth: number
 }
 
 export interface IRow {
@@ -134,6 +135,8 @@ export class HeaderData implements IHeader {
   validatorType: string
   unique: boolean
   isData: boolean = true
+  columnWidth: number
+
   constructor(template: HeaderTemplate)
   constructor(key: string, type: CellType)
   constructor(...args: any) {
@@ -144,6 +147,7 @@ export class HeaderData implements IHeader {
       this.type = t.type ?? 'string'
       this.validatorType = t.validatorType ?? this.type
       this.unique = t.unique ?? false
+      this.columnWidth = t.columnWidth ?? 80
     } else {
       const key: string = args[0]
       const type: CellType = args[1]
@@ -155,6 +159,7 @@ export class HeaderData implements IHeader {
         this.validatorType = 'int'
       }
       this.unique = false
+      this.columnWidth = 80
     }
   }
 
@@ -173,6 +178,7 @@ export type HeaderTemplate = {
   type?: CellType
   validatorType?: string
   unique?: boolean
+  columnWidth?: number
 }
 
 //=================================================

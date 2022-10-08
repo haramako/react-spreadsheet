@@ -1,13 +1,7 @@
 import React, { useCallback } from 'react'
 import { SpreadSheet } from './spreadsheet'
 import SpreadSheetFilter from './SpreadSheetFilter'
-import {
-  datasetState,
-  datasetVersionState,
-  filterState,
-  selectionState,
-  viewState,
-} from './state'
+import { datasetState, datasetVersionState, filterState, selectionState, viewState } from './state'
 import { useRecoilState, useRecoilValue } from 'recoil'
 import { Button, ButtonGroup } from '@mui/material'
 import AutoSizer from 'react-virtualized-auto-sizer'
@@ -26,8 +20,7 @@ export const TablePage: React.FC = () => {
   const params = useLoaderData() as Params
   const dataset = useRecoilValue(datasetState)
   const selection = useRecoilValue(selectionState)
-  const [datasetVersion, setDatasetVersion] =
-    useRecoilState(datasetVersionState)
+  const [datasetVersion, setDatasetVersion] = useRecoilState(datasetVersionState)
   const [filter, setFilter] = useRecoilState(filterState)
   const view = useRecoilValue(viewState)
 
@@ -47,15 +40,7 @@ export const TablePage: React.FC = () => {
     }
     setDatasetVersion(datasetVersion + 1)
     setFilter({ ...filter, version: filter.version + 1 })
-  }, [
-    dataset,
-    selection,
-    view,
-    filter,
-    setFilter,
-    setDatasetVersion,
-    datasetVersion,
-  ])
+  }, [dataset, selection, view, filter, setFilter, setDatasetVersion, datasetVersion])
 
   function onRemoveClick() {
     const sel = selection.selection
@@ -84,7 +69,7 @@ export const TablePage: React.FC = () => {
       <div>
         <AutoSizer>
           {({ height, width }) => {
-            return <SpreadSheet table={view} {...{ width, height }} />
+            return <SpreadSheet key={params.view} table={view} {...{ width, height }} />
           }}
         </AutoSizer>
       </div>
